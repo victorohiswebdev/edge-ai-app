@@ -16,9 +16,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${poppins.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} h-full antialiased`}
     >
-      <body className={`${poppins.className} min-h-full flex flex-col`}>
+      <body
+        className={`${poppins.className} ${poppins.variable} min-h-full flex flex-col`}
+        style={poppins.style}
+      >
         {children}
       </body>
     </html>
