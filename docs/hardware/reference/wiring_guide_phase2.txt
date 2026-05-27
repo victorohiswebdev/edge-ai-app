@@ -1,0 +1,130 @@
+# Phase 2: Relay & Pump Wiring Guide
+
+## Components
+
+- 4-Channel 5V Relay Module (active-LOW)
+- 3x 5V DC Submersible Pumps
+- 40,000 mAh Oraimo Power Bank (pump power)
+- Arduino Uno (already wired + connected)
+- Jumper wires (M-M, M-F)
+- Clear silicone tubing (for water lines)
+- Water reservoir (clean container)
+
+## Dual Power Architecture
+
+This is the most important part. We have TWO separate power domains:
+
+```
+LOGIC RAIL (Pi + Arduino)       POWER RAIL (Pumps)
+─────────────────────────────    ──────────────────────────
+Pi via its USB-C PSU            Oraimo Power Bank (5V)
+Arduino via Pi's USB            → Relay COM terminal
+                                → Relay NO → Pump (+)
+                                Pump (-) → Power Bank GND
+```
+
+The relay optically isolates the two domains. The Arduino's tiny signal
+current triggers a magnetic coil, which closes a high-current circuit
+for the pump. No electrical noise crosses the gap.
+
+## Relay Module Pinout (Active-LOW)
+
+Most 4-channel relay modules have this layout:
+
+```
+┌────────────────────────────────────────────┐
+│  VCC  GND  IN1  IN2  IN3  IN4             │
+│  [ ]   [ ]  [ ]  [ ]  [ ]  [ ]            │
+│                                            │
+│  Relay 1    Relay 2    Relay 3    Relay 4  │
+│  ┌─[ ]─┐   ┌─[ ]─┐   ┌─[ ]─┐   ┌─[ ]─┐   │
+│  │COM NO│   │COM NO│   │COM NO│   │COM NO│   │
+│  └─────┘   └─────┘   └─────┘   └─────┘   │
+└────────────────────────────────────────────┘
+```
+
+## Wiring Connections
+
+### Signal Side (Arduino → Relay)
+
+| Relay Module | → | Arduino / Power |
+|---|---|---|
+| VCC | → | Breadboard 5V Rail (from Arduino) |
+| GND | → | Breadboard GND Rail |
+| IN1 (Zone 1) | → | Arduino Digital Pin 7 |
+| IN2 (Zone 2) | → | Arduino Digital Pin 6 |
+| IN3 (Zone 3) | → | Arduino Digital Pin 5 |
+| IN4 | → | (spare, not connected) |
+
+### Power Side (Power Bank → Relay → Pumps)
+
+⚠️ The relay COM and NO terminals handle the high-current pump circuit.
+
+```
+Oraimo Power Bank (5V out)
+         │
+         ├── (+) ──→ Relay 1 COM ──→ [Relay contacts] ──→ Relay 1 NO ──→ Pump 1 (+)
+         │                                                    Pump 1 (-) ──→ Power Bank (-)
+         │
+         ├── (+) ──→ Relay 2 COM ──→ [Relay contacts] ──→ Relay 2 NO ──→ Pump 2 (+)
+         │                                                    Pump 2 (-) ──→ Power Bank (-)
+         │
+         └── (+) ──→ Relay 3 COM ──→ [Relay contacts] ──→ Relay 3 NO ──→ Pump 3 (+)
+                                                             Pump 3 (-) ──→ Power Bank (-)
+```
+
+### Quick Visual
+
+```
+┌─ ARDUINO ─────────────────────────────────────────┐
+│                                                    │
+│  Pin 7 ───────────┬── Relay IN1                    │
+│  Pin 6 ───────────┼── Relay IN2                    │
+│  Pin 5 ───────────┼── Relay IN3                    │
+│  5V   ────────────┼── Relay VCC                    │
+│  GND  ────────────┼── Relay GND                    │
+│                    │                                │
+│  A0 ─── Sensor 1   │                                │
+│  A1 ─── Sensor 2   │                                │
+│  A2 ─── Sensor 3   │                                │
+│  A4(SDA) ─── BME   │                                │
+│  A5(SCL) ─── BME   │                                │
+└────────────────────┘                                │
+                      │                                │
+             ┌────────┴──────────── RELAY MODULE ────┐
+             │                                       │
+             │  COM1 ─── Power Bank (+)              │
+             │  NO1  ─── Pump 1 (+)                  │
+             │  COM2 ─── Power Bank (+)              │
+             │  NO2  ─── Pump 2 (+)                  │
+             │  COM3 ─── Power Bank (+)              │
+             │  NO3  ─── Pump 3 (+)                  │
+             │                                       │
+             │  Pump 1 (-) ─── Power Bank (-)        │
+             │  Pump 2 (-) ─── Power Bank (-)        │
+             │  Pump 3 (-) ─── Power Bank (-)        │
+             └───────────────────────────────────────┘
+```
+
+## Verification Checklist
+
+Before powering on:
+□ Arduino 5V to Relay VCC (verify with multimeter)
+□ Arduino GND to Relay GND (continuity check)
+□ Pin 7 → Relay IN1, Pin 6 → Relay IN2, Pin 5 → Relay IN3
+□ Power Bank (+) to Relay COM1, COM2, COM3
+□ Relay NO1 → Pump 1 positive lead
+□ Pump 1 negative lead → Power Bank (-)
+□ Repeat for pumps 2 and 3
+□ No exposed wires touching each other
+□ Power bank NOT plugged in until ready to test
+
+## Safety Notes
+
+- NEVER connect pump power through the Arduino's 5V pin — pumps can draw
+  200-500mA each, which will fry the Arduino's voltage regulator
+- The relay module's signal side is safe (optocoupler isolation)
+- Test ONE pump at a time before running all three
+- Keep water reservoir away from electronics
+- If a pump doesn't run, check the COM/NO wiring — the relay needs 
+  BOTH COM (power in) and NO (power out) connected

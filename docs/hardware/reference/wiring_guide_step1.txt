@@ -1,0 +1,80 @@
+# Step 1: Sensor Wiring Guide — Arduino + 3 Moisture Sensors + BME280
+# This is the "passive data acquisition" phase: Arduino reads sensors,
+# packages as JSON, and sends over Serial.
+
+## Breadboard Power Distribution
+
+   Arduino Uno                Breadboard
+   ┌────────────┐             ┌──────────────────────┐
+   │            │             │  (+) Red Rail ───────●── 5V (from Arduino)
+   │        5V  ├─────────────┤                       │
+   │            │             │  (-) Blue Rail ──────●── GND (from Arduino)
+   │       GND  ├─────────────┤                       │
+   │            │             └──────────────────────┘
+   │    A0 (D14)│── Sensor 1 (Zone 1) AOUT
+   │    A1 (D15)│── Sensor 2 (Zone 2) AOUT
+   │    A2 (D16)│── Sensor 3 (Zone 3) AOUT
+   │            │
+   │    A4 (SDA)│── BME280 SDA
+   │    A5 (SCL)│── BME280 SCL
+   │            │
+   │    USB      ──── to Raspberry Pi (later)
+   └────────────┘
+
+## BME280 Pin Connections (GYBME280-5V module)
+
+   BME280 Module     →     Arduino/Breadboard
+   ─────────────────────────────────────────
+   VCC (pin 1)       →     Breadboard 5V Rail
+   GND (pin 2)       →     Breadboard GND Rail
+   SCL (pin 3)       →     Arduino A5 (SCL)
+   SDA (pin 4)       →     Arduino A4 (SDA)
+
+   NOTE: The GYBME280-5V has an onboard voltage regulator + level shifter,
+   so it can safely run on 5V logic. If you have a bare BME280 module
+   (no regulator), connect VCC to 3.3V instead of 5V.
+
+## Capacitive Soil Moisture Sensors (×3)
+
+   Sensor              →     Arduino/Breadboard
+   ─────────────────────────────────────────
+   VCC (middle pin)    →     Breadboard 5V Rail
+   GND (third pin)     →     Breadboard GND Rail
+   AOUT (first pin)    →     Arduino analog pin (see below)
+
+   Sensor positions:
+   Sensor 1 (Zone 1)   →     A0
+   Sensor 2 (Zone 2)   →     A1
+   Sensor 3 (Zone 3)   →     A2
+
+   TIP: Capacitive sensors are NOT polarity-sensitive on the signal pin,
+   but they DO need stable 5V for consistent readings. Long wires can
+   introduce noise — keep leads under 50cm if possible.
+
+## Quick Visual — Full Breadboard Layout
+
+                        ┌──────────────────────────────────┐
+   5V Rail ─────────────┤ (+)────────────────────────────(+) │
+   GND Rail ────────────┤ (-)────────────────────────────(-) │
+                        │      ┌────┐  ┌────┐  ┌────┐     │
+   Sensor 1 AOUT ───────┤ A0───│ S1 │  │ S2 │  │ S3 │     │
+   Sensor 2 AOUT ───────┤ A1───│    │  │    │  │    │     │
+   Sensor 3 AOUT ───────┤ A2───│    │  │    │  │    │     │
+                        │      └────┘  └────┘  └────┘     │
+   BME280 SDA ──────────┤ A4────────────────────────────── │
+   BME280 SCL ──────────┤ A5────────────────────────────── │
+                        │                                  │
+                        └──────────────────────────────────┘
+
+## Verification Checklist
+
+Before uploading code:
+□ Arduino connected to PC via USB
+□ 5V rail getting power (check with multimeter — ~4.8-5.0V)
+□ GND rail continuous from Arduino GND
+□ BME280 VCC to 5V (or 3.3V if bare module)
+□ BME280 GND to GND
+□ BME280 SDA to A4, SCL to A5
+□ Each sensor VCC to 5V, GND to GND
+□ Sensor 1 AOUT to A0, Sensor 2 AOUT to A1, Sensor 3 AOUT to A2
+□ No crossed wires — double-check before powering on
