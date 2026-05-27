@@ -1,0 +1,21 @@
+[Unit]
+Description=Edge AI Farm Dashboard — Next.js frontend
+Documentation=https://github.com/victorohiswebdev/edge-ai-app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=victorohis
+WorkingDirectory=/home/victorohis/fyp-project/web/edge-ai-app
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

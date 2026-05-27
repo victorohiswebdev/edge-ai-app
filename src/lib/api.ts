@@ -5,7 +5,12 @@
  * (common during development without hardware connected).
  */
 
-import type { LatestReading, SensorReading, SensorSummary } from "./types";
+import type {
+  LatestReading,
+  SensorReading,
+  SensorSummary,
+  WithSource,
+} from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -111,20 +116,23 @@ export function generateSummary(): SensorSummary {
 
 // ─── Combined fetcher (API → fallback → synthetic) ─────────────────
 
-export async function getLatestReading(): Promise<LatestReading> {
+export async function getLatestReading(): Promise<WithSource<LatestReading>> {
   const api = await fetchLatestReading();
-  return api ?? generateLatestReading();
+  if (api) return { data: api, source: "live" };
+  return { data: generateLatestReading(), source: "synthetic" };
 }
 
 export async function getHistory(
   hours = 24,
   limit = 200
-): Promise<SensorReading[]> {
+): Promise<WithSource<SensorReading[]>> {
   const api = await fetchHistory(hours, limit);
-  return api ?? generateHistory(hours, Math.min(limit, 200));
+  if (api) return { data: api, source: "live" };
+  return { data: generateHistory(hours, Math.min(limit, 200)), source: "synthetic" };
 }
 
-export async function getSummary(hours = 24): Promise<SensorSummary> {
+export async function getSummary(hours = 24): Promise<WithSource<SensorSummary>> {
   const api = await fetchSummary(hours);
-  return api ?? generateSummary();
+  if (api) return { data: api, source: "live" };
+  return { data: generateSummary(), source: "synthetic" };
 }

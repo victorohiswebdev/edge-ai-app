@@ -29,3 +29,12 @@ export interface SensorSummary {
   from_timestamp: string;
   to_timestamp: string;
 }
+
+// ─── Data source tracking ─────────────────────────────────
+
+export type DataSource = "live" | "synthetic";
+
+export interface WithSource<T> {
+  data: T;
+  source: DataSource;
+}

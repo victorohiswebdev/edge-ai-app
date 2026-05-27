@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { LatestReading, SensorReading } from "@/lib/types";
+import type { LatestReading, SensorReading, DataSource } from "@/lib/types";
 import { getLatestReading, getHistory, getSummary } from "@/lib/api";
 import SensorChart from "@/components/SensorChart";
 import type { SensorSummary } from "@/lib/types";
@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const [history, setHistory] = useState<SensorReading[]>([]);
   const [summary, setSummary] = useState<SensorSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState<DataSource>("synthetic");
 
   const refresh = useCallback(async () => {
     const [l, h, s] = await Promise.all([
@@ -18,9 +19,10 @@ export default function DashboardPage() {
       getHistory(24, 200),
       getSummary(24),
     ]);
-    setLatest(l);
-    setHistory(h);
-    setSummary(s);
+    setLatest(l.data);
+    setHistory(h.data);
+    setSummary(s.data);
+    setDataSource(l.source);
     setLoading(false);
   }, []);
 
@@ -34,7 +36,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex flex-col flex-1">
-        <Header />
+        <Header dataSource={dataSource} />
         <main className="flex-1 overflow-y-auto p-8">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
@@ -48,7 +50,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col flex-1">
-      <Header />
+      <Header dataSource={dataSource} />
 
       <main className="flex-1 space-y-6 overflow-y-auto p-8">
         {/* Live sensor cards */}
@@ -140,7 +142,9 @@ export default function DashboardPage() {
 
 // ─── Sub-components ───────────────────────────────────────────────
 
-function Header() {
+function Header({ dataSource }: { dataSource: DataSource }) {
+  const isLive = dataSource === "live";
+
   return (
     <header className="flex items-center justify-between border-b border-border px-8 py-4">
       <div>
@@ -152,6 +156,22 @@ function Header() {
         </p>
       </div>
       <div className="flex items-center gap-4">
+        {/* Data source indicator */}
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+            isLive
+              ? "bg-success/10 text-success"
+              : "bg-warning/10 text-warning"
+          }`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              isLive ? "bg-success" : "bg-warning"
+            }`}
+          />
+          {isLive ? "Live Data" : "Simulated"}
+        </span>
+        {/* System status */}
         <span className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="h-2 w-2 rounded-full bg-success" />
           System Online
