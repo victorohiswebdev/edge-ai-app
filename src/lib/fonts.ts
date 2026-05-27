@@ -1,5 +1,4 @@
-import { Poppins } from "next/font/google";
-import localFont from "next/font/local";
+import { Poppins, Space_Grotesk } from "next/font/google";
 
 export const poppins = Poppins({
   subsets: ["latin"],
@@ -8,14 +7,9 @@ export const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-export const spaceGrotesk = localFont({
-  src: [
-    {
-      path: "../../public/fonts/space-grotesk/space-grotesk-700.woff2",
-      weight: "700",
-      style: "normal",
-    },
-  ],
+export const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["700"],
   display: "swap",
   variable: "--font-space-grotesk",
 });
