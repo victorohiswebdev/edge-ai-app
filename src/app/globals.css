@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: "Poppins", var(--font-poppins), system-ui, sans-serif;
-  --font-heading: "Space Grotesk", var(--font-space-grotesk), system-ui, sans-serif;
+  --font-sans: var(--font-poppins), system-ui, sans-serif;
+  --font-heading: var(--font-space-grotesk), system-ui, sans-serif;
 
   /* Brand: Forest green primary, amber accent, warm off-white canvas */
   --color-primary: #16a34a;
