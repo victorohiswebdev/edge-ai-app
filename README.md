@@ -98,8 +98,9 @@ All hardware, firmware, and software documentation lives in [`docs/`](docs/):
 | [Hardware](docs/hardware/wiring-overview.md) | Wiring diagrams, pin assignments, power architecture, sensor calibration |
 | [Firmware](docs/firmware/index.md) | Arduino sketches — sensor reading, pump control, diagnostics |
 | [Software](docs/software/index.md) | Pi data logger, pump test tool, synthetic data generator, FastAPI reference |
+| [Workflow](WORKFLOW.md) | Boot sequence, systemd services, three-mode data source indicator, recovery |
 
-Start at [`docs/index.md`](docs/index.md) for the full system map.
+The header badge shows the current pipeline state: **Simulated** (amber) → **Database** (blue) → **Live Data** (green).
 
 ---
 
