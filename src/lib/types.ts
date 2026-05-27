@@ -32,9 +32,16 @@ export interface SensorSummary {
 
 // ─── Data source tracking ─────────────────────────────────
 
-export type DataSource = "live" | "synthetic";
+export type DataSource = "synthetic" | "database" | "live";
 
 export interface WithSource<T> {
   data: T;
   source: DataSource;
+}
+
+export interface SystemStatus {
+  database_connected: boolean;
+  logger_active: boolean;
+  last_reading: string | null;
+  total_readings: number;
 }

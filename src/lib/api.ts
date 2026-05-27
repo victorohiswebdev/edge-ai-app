@@ -6,9 +6,11 @@
  */
 
 import type {
+  DataSource,
   LatestReading,
   SensorReading,
   SensorSummary,
+  SystemStatus,
   WithSource,
 } from "./types";
 
@@ -47,6 +49,10 @@ export async function fetchSummary(
   return fetchJson<SensorSummary>(
     `${API_BASE}/api/v1/sensors/summary?hours=${hours}`
   );
+}
+
+export async function fetchSystemStatus(): Promise<SystemStatus | null> {
+  return fetchJson<SystemStatus>(`${API_BASE}/api/v1/system/status`);
 }
 
 // ─── Synthetic fallback data ───────────────────────────────────────
@@ -117,8 +123,16 @@ export function generateSummary(): SensorSummary {
 // ─── Combined fetcher (API → fallback → synthetic) ─────────────────
 
 export async function getLatestReading(): Promise<WithSource<LatestReading>> {
-  const api = await fetchLatestReading();
-  if (api) return { data: api, source: "live" };
+  const [api, status] = await Promise.all([
+    fetchLatestReading(),
+    fetchSystemStatus(),
+  ]);
+
+  if (api && status) {
+    const source: DataSource = status.logger_active ? "live" : "database";
+    return { data: api, source };
+  }
+
   return { data: generateLatestReading(), source: "synthetic" };
 }
 

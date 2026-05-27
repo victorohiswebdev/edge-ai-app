@@ -143,7 +143,28 @@ export default function DashboardPage() {
 // ─── Sub-components ───────────────────────────────────────────────
 
 function Header({ dataSource }: { dataSource: DataSource }) {
-  const isLive = dataSource === "live";
+  const badgeConfig: Record<
+    DataSource,
+    { label: string; dot: string; bg: string }
+  > = {
+    live: {
+      label: "Live Data",
+      dot: "bg-success",
+      bg: "bg-success/10 text-success",
+    },
+    database: {
+      label: "Database",
+      dot: "bg-blue-500",
+      bg: "bg-blue-500/10 text-blue-500",
+    },
+    synthetic: {
+      label: "Simulated",
+      dot: "bg-warning",
+      bg: "bg-warning/10 text-warning",
+    },
+  };
+
+  const badge = badgeConfig[dataSource];
 
   return (
     <header className="flex items-center justify-between border-b border-border px-8 py-4">
@@ -158,18 +179,10 @@ function Header({ dataSource }: { dataSource: DataSource }) {
       <div className="flex items-center gap-4">
         {/* Data source indicator */}
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
-            isLive
-              ? "bg-success/10 text-success"
-              : "bg-warning/10 text-warning"
-          }`}
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${badge.bg}`}
         >
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              isLive ? "bg-success" : "bg-warning"
-            }`}
-          />
-          {isLive ? "Live Data" : "Simulated"}
+          <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} />
+          {badge.label}
         </span>
         {/* System status */}
         <span className="flex items-center gap-2 text-sm text-muted-foreground">
