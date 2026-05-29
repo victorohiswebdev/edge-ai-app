@@ -77,6 +77,10 @@ export default function SensorChart({ data }: Props) {
             <span className="h-2.5 w-2.5 rounded-full bg-[#dc2626]" />
             Temp
           </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#8b5cf6]" />
+            Humidity
+          </span>
         </div>
       </div>
 
@@ -173,6 +177,17 @@ export default function SensorChart({ data }: Props) {
               strokeWidth={2}
               dot={false}
               name="Temperature"
+            />
+            <Area
+              yAxisId="moisture"
+              type="monotone"
+              dataKey="humidity_perc"
+              stroke="#8b5cf6"
+              fill="#8b5cf6"
+              fillOpacity={0.05}
+              strokeWidth={2}
+              dot={false}
+              name="Humidity"
             />
           </AreaChart>
         </ResponsiveContainer>
