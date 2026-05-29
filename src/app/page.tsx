@@ -89,7 +89,7 @@ export default function DashboardPage() {
     const slow = setInterval(() => {
       getHistory(24, 200).then(h => setHistory(h.data));
       getSummary(24).then(s => setSummary(s.data));
-    }, 60000);
+    }, 120000);
     return () => { clearInterval(quick); clearInterval(slow); };
   }, [refresh]);
 
