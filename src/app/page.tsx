@@ -22,7 +22,6 @@ import SensorChart from "@/components/SensorChart";
 const TEMP_ACCENT = { from: "from-green-500", to: "to-teal-400", tint: "from-green-500/5 to-teal-500/5" };
 const HUMIDITY_ACCENT = { from: "from-sky-500", to: "to-cyan-400", tint: "from-sky-500/5 to-cyan-500/5" };
 const PUMP_ACCENT = { from: "from-amber-500", to: "to-orange-400", tint: "from-amber-500/5 to-orange-500/5" };
-const LOG_ACCENT = { from: "from-violet-500", to: "to-purple-600", tint: "from-violet-500/5 to-purple-600/5" };
 
 const ZONE_ACCENTS: Record<string, { from: string; to: string; dot: string; progress: string; tint: string; badge: string }> = {
   Control: {
@@ -48,10 +47,19 @@ const INFO = {
   temp: "Ambient air temperature measured by the BME280 sensor at canopy height. Used to calculate evapotranspiration rates and VPD for precision irrigation scheduling.",
   humidity: "Relative humidity reading from the BME280 sensor. Combined with temperature to compute vapour pressure deficit — a key input to the predictive irrigation model.",
   pump: "Current pump activation state. The Random Forest model predicts when each zone needs irrigation and triggers the relay-controlled pump system.",
+  vpd: "Vapour Pressure Deficit calculated from temperature & humidity. High VPD (>2.0 kPa) indicates plants are transpiring rapidly and may need irrigation.",
   z1: "Control zone — baseline irrigation without AI intervention. Watered on a fixed schedule to serve as experimental control for comparing water usage and plant health.",
   z2: "Stress zone — deliberately reduced irrigation to observe plant physiological response under water-limited conditions. Tests the system's drought detection capability.",
   z3: "AI-Managed zone — the Random Forest model predicts optimal irrigation timing and duration based on real-time sensor data, ambient conditions, and historical patterns.",
 };
+
+// ─── Helpers ──────────────────────────────────────────────────
+
+function calcVPD(temp: number | null | undefined, hum: number | null | undefined): string {
+  if (temp == null || hum == null) return "N/A";
+  const es = 0.61078 * Math.exp((17.27 * temp) / (temp + 237.3));
+  return `${((1 - hum / 100) * es).toFixed(1)} kPa`;
+}
 
 // ─── Page ─────────────────────────────────────────────────────
 
@@ -85,7 +93,7 @@ export default function DashboardPage() {
   useEffect(() => {
     refresh();
     const quick = setInterval(refresh, 10000);
-    // Chart data doesn't need refreshing every 10s — 60s is plenty
+    // Chart data refreshes slower — no need every 10s
     const slow = setInterval(() => {
       getHistory(24, 200).then(h => setHistory(h.data));
       getSummary(24).then(s => setSummary(s.data));
@@ -95,8 +103,8 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen">
-        <div className="h-64 animate-pulse bg-gradient-to-br from-green-900 to-emerald-900" />
+      <div className="flex min-h-screen flex-col">
+        <div className="h-56 animate-pulse bg-green-700" />
         <main className="flex-1 space-y-8 p-8">
           <div>
             <div className="h-5 w-32 rounded bg-muted" />
@@ -115,7 +123,7 @@ export default function DashboardPage() {
 
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-10 px-4 py-10 md:px-8 md:py-12 lg:space-y-14 lg:py-16">
         {/* Live Sensors */}
-        <section>
+        <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             Environmental Sensors
           </h2>
@@ -130,7 +138,6 @@ export default function DashboardPage() {
               accent={{ from: TEMP_ACCENT.from, to: TEMP_ACCENT.to }}
               tint={TEMP_ACCENT.tint}
               info={INFO.temp}
-              delay={0}
             />
             <SensorCard
               label="Humidity"
@@ -139,7 +146,6 @@ export default function DashboardPage() {
               accent={{ from: HUMIDITY_ACCENT.from, to: HUMIDITY_ACCENT.to }}
               tint={HUMIDITY_ACCENT.tint}
               info={INFO.humidity}
-              delay={0.05}
             />
             <SensorCard
               label="Pump Status"
@@ -148,22 +154,20 @@ export default function DashboardPage() {
               accent={{ from: PUMP_ACCENT.from, to: PUMP_ACCENT.to }}
               tint={PUMP_ACCENT.tint}
               info={INFO.pump}
-              delay={0.1}
             />
             <SensorCard
               label="Vapour Pressure"
-              value={latest?.temperature_c != null && latest?.humidity_perc != null ? `${((1 - latest.humidity_perc / 100) * 0.61078 * Math.exp((17.27 * latest.temperature_c) / (latest.temperature_c + 237.3))).toFixed(1)} kPa` : "N/A"}
+              value={calcVPD(latest?.temperature_c, latest?.humidity_perc)}
               subtitle="VPD · Calculated"
               accent={{ from: "from-teal-500", to: "to-emerald-400" }}
               tint="from-teal-500/5 to-emerald-500/5"
-              info="Vapour Pressure Deficit calculated from temperature & humidity. High VPD (>2.0 kPa) indicates plants are transpiring rapidly and may need irrigation."
-              delay={0.15}
+              info={INFO.vpd}
             />
           </div>
         </section>
 
         {/* Zone Moisture */}
-        <section>
+        <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             Irrigation Zones
           </h2>
@@ -177,7 +181,6 @@ export default function DashboardPage() {
               moisture={live?.moisture_zone_1 ?? latest?.moisture_zone_1 ?? null}
               accent={ZONE_ACCENTS.Control}
               info={INFO.z1}
-              delay={0}
             />
             <ZoneCard
               name="Zone 2 — Stress"
@@ -185,7 +188,6 @@ export default function DashboardPage() {
               moisture={live?.moisture_zone_2 ?? latest?.moisture_zone_2 ?? null}
               accent={ZONE_ACCENTS.Stress}
               info={INFO.z2}
-              delay={0.05}
             />
             <ZoneCard
               name="Zone 3 — AI-Managed"
@@ -193,13 +195,12 @@ export default function DashboardPage() {
               moisture={live?.moisture_zone_3 ?? latest?.moisture_zone_3 ?? null}
               accent={ZONE_ACCENTS.AI}
               info={INFO.z3}
-              delay={0.1}
             />
           </div>
         </section>
 
-        {/* Live Log — dedicated panel */}
-        <section>
+        {/* Live Log */}
+        <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             Serial Monitor
           </h2>
@@ -212,7 +213,7 @@ export default function DashboardPage() {
         </section>
 
         {/* 24-hour chart */}
-        <section>
+        <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             24-Hour History
           </h2>
@@ -225,7 +226,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Plant Health */}
-        <section>
+        <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             Plant Health
           </h2>

@@ -1,23 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
-
 export function PlantHealthCard() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
-      whileHover={{ y: -4 }}
-      className="group relative flex h-56 items-center justify-center overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-emerald-500/5 to-teal-500/5 shadow-card transition-shadow duration-300 hover:shadow-elevated"
-    >
-      {/* Decorative blobs */}
-      <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-teal-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute left-1/3 top-1/3 h-32 w-32 rounded-full bg-emerald-500/8 blur-3xl" />
-
-      {/* Pattern overlay — subtle crop rows */}
+    <div className="group relative flex h-56 items-center justify-center overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-emerald-500/5 to-teal-500/5 shadow-card transition-shadow duration-200 hover:shadow-elevated">
+      {/* Pattern overlay */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
@@ -32,8 +18,7 @@ export function PlantHealthCard() {
           <svg
             className="h-7 w-7 text-primary"
             xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
+            width="24" height="24"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -46,7 +31,6 @@ export function PlantHealthCard() {
           </svg>
         </div>
 
-        {/* Title */}
         <h3 className="font-heading text-lg font-bold tracking-tight text-card-foreground">
           CNN Plant Health Classifier
         </h3>
@@ -56,15 +40,11 @@ export function PlantHealthCard() {
           and growth stage classification
         </p>
 
-        {/* Status badge */}
         <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/40" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-          </span>
+          <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_4px_rgba(22,163,74,0.5)]" />
           Phase 4 — In Development
         </span>
       </div>
-    </motion.div>
+    </div>
   );
 }
