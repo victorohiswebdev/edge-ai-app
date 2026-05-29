@@ -4,42 +4,52 @@
   --font-sans: var(--font-poppins), system-ui, sans-serif;
   --font-heading: var(--font-space-grotesk), system-ui, sans-serif;
 
-  /* Brand: Forest green primary, amber accent, warm off-white canvas */
+  /* Brand: Rich green palette — presentation-grade */
   --color-primary: #16a34a;
   --color-primary-foreground: #ffffff;
-  --color-accent: #d97706;
-  --color-accent-foreground: #ffffff;
+  --color-primary-hover: #15803d;
+  --color-primary-dark: #166534;
+  --color-primary-light: #bbf7d0;
+  --color-secondary: #0d9488;
+  --color-secondary-foreground: #ffffff;
 
   /* Background & surface */
-  --color-background: #faf8f5;
-  --color-foreground: #1a1a1a;
-  --color-muted: #f5f3f0;
-  --color-muted-foreground: #78716c;
-  --color-border: #e7e5e4;
+  --color-background: #f6faf6;
+  --color-foreground: #171717;
+  --color-muted: #eef5ee;
+  --color-muted-foreground: #6b7280;
+  --color-border: #dce8db;
   --color-card: #ffffff;
-  --color-card-foreground: #1a1a1a;
+  --color-card-foreground: #171717;
 
   /* Semantic */
   --color-success: #16a34a;
-  --color-warning: #d97706;
+  --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #3b82f6;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+  --shadow-hero: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --color-primary: #22c55e;
-    --color-primary-foreground: #0f1115;
-    --color-accent: #f59e0b;
-    --color-accent-foreground: #0f1115;
+    --color-primary-foreground: #052e16;
+    --color-primary-hover: #16a34a;
+    --color-primary-dark: #166534;
+    --color-secondary: #14b8a6;
+    --color-secondary-foreground: #042f2e;
 
-    --color-background: #0f1115;
-    --color-foreground: #f7f8f8;
-    --color-muted: #191a1b;
-    --color-muted-foreground: #8a8f98;
+    --color-background: #0a1a0a;
+    --color-foreground: #f0fdf0;
+    --color-muted: #0f2a0f;
+    --color-muted-foreground: #86a086;
     --color-border: rgba(255, 255, 255, 0.06);
-    --color-card: #16181c;
-    --color-card-foreground: #f7f8f8;
+    --color-card: #0f1a0f;
+    --color-card-foreground: #f0fdf0;
 
     --color-success: #22c55e;
     --color-warning: #f59e0b;

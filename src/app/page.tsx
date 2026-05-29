@@ -9,9 +9,9 @@ import type {
   SensorSummary,
 } from "@/lib/types";
 import { getLatestReading, getHistory, getSummary, fetchLiveReading } from "@/lib/api";
-import { DashboardHeader } from "@/components/dashboard/header";
+import { HeroHeader } from "@/components/dashboard/hero-header";
 import { SensorCard } from "@/components/dashboard/sensor-card";
-import { LiveLogCard } from "@/components/dashboard/live-log-card";
+import { LiveLogPanel } from "@/components/dashboard/live-log-panel";
 import { ZoneCard } from "@/components/dashboard/zone-card";
 import { PlantHealthCard } from "@/components/dashboard/plant-health-card";
 import { SkeletonCard } from "@/components/dashboard/skeleton-card";
@@ -19,49 +19,38 @@ import SensorChart from "@/components/SensorChart";
 
 // ─── Accent profiles ──────────────────────────────────────────
 
-const TEMP_ACCENT = {
-  from: "from-green-500",
-  to: "to-teal-400",
-  tint: "from-green-500/5 to-teal-500/5",
-};
-
-const HUMIDITY_ACCENT = {
-  from: "from-sky-500",
-  to: "to-cyan-400",
-  tint: "from-sky-500/5 to-cyan-500/5",
-};
-
-const PUMP_ACCENT = {
-  from: "from-amber-500",
-  to: "to-orange-400",
-  tint: "from-amber-500/5 to-orange-500/5",
-};
+const TEMP_ACCENT = { from: "from-green-500", to: "to-teal-400", tint: "from-green-500/5 to-teal-500/5" };
+const HUMIDITY_ACCENT = { from: "from-sky-500", to: "to-cyan-400", tint: "from-sky-500/5 to-cyan-500/5" };
+const PUMP_ACCENT = { from: "from-amber-500", to: "to-orange-400", tint: "from-amber-500/5 to-orange-500/5" };
+const LOG_ACCENT = { from: "from-violet-500", to: "to-purple-600", tint: "from-violet-500/5 to-purple-600/5" };
 
 const ZONE_ACCENTS: Record<string, { from: string; to: string; dot: string; progress: string; tint: string; badge: string }> = {
   Control: {
-    from: "from-green-500",
-    to: "to-emerald-400",
-    dot: "bg-green-500",
-    progress: "bg-gradient-to-r from-green-500 to-emerald-400",
-    tint: "from-green-500/5 to-emerald-500/5",
-    badge: "bg-success/10 text-success",
+    from: "from-green-500", to: "to-emerald-400",
+    dot: "bg-green-500", progress: "bg-gradient-to-r from-green-500 to-emerald-400",
+    tint: "from-green-500/5 to-emerald-500/5", badge: "bg-success/10 text-success",
   },
   Stress: {
-    from: "from-amber-500",
-    to: "to-orange-400",
-    dot: "bg-amber-500",
-    progress: "bg-gradient-to-r from-amber-500 to-orange-400",
-    tint: "from-amber-500/5 to-orange-500/5",
-    badge: "bg-warning/10 text-warning",
+    from: "from-amber-500", to: "to-orange-400",
+    dot: "bg-amber-500", progress: "bg-gradient-to-r from-amber-500 to-orange-400",
+    tint: "from-amber-500/5 to-orange-500/5", badge: "bg-warning/10 text-warning",
   },
   AI: {
-    from: "from-blue-500",
-    to: "to-indigo-400",
-    dot: "bg-blue-500",
-    progress: "bg-gradient-to-r from-blue-500 to-indigo-400",
-    tint: "from-blue-500/5 to-indigo-500/5",
-    badge: "bg-info/10 text-info",
+    from: "from-blue-500", to: "to-indigo-400",
+    dot: "bg-blue-500", progress: "bg-gradient-to-r from-blue-500 to-indigo-400",
+    tint: "from-blue-500/5 to-indigo-500/5", badge: "bg-info/10 text-info",
   },
+};
+
+// ─── Hover info content ───────────────────────────────────────
+
+const INFO = {
+  temp: "Ambient air temperature measured by the BME280 sensor at canopy height. Used to calculate evapotranspiration rates and VPD for precision irrigation scheduling.",
+  humidity: "Relative humidity reading from the BME280 sensor. Combined with temperature to compute vapour pressure deficit — a key input to the predictive irrigation model.",
+  pump: "Current pump activation state. The Random Forest model predicts when each zone needs irrigation and triggers the relay-controlled pump system.",
+  z1: "Control zone — baseline irrigation without AI intervention. Watered on a fixed schedule to serve as experimental control for comparing water usage and plant health.",
+  z2: "Stress zone — deliberately reduced irrigation to observe plant physiological response under water-limited conditions. Tests the system's drought detection capability.",
+  z3: "AI-Managed zone — the Random Forest model predicts optimal irrigation timing and duration based on real-time sensor data, ambient conditions, and historical patterns.",
 };
 
 // ─── Page ─────────────────────────────────────────────────────
@@ -101,17 +90,13 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col flex-1">
-        <DashboardHeader dataSource={dataSource} />
-        <main className="flex-1 space-y-6 overflow-y-auto p-8">
+      <div className="flex flex-col min-h-screen">
+        <div className="h-64 animate-pulse bg-gradient-to-br from-green-900 to-emerald-900" />
+        <main className="flex-1 space-y-8 p-8">
           <div>
-            <h2 className="font-heading text-lg font-bold text-foreground">
-              Live Sensors
-            </h2>
+            <div className="h-5 w-32 rounded bg-muted" />
             <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[...Array(4)].map((_, i) => (
-                <SkeletonCard key={i} />
-              ))}
+              {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           </div>
         </main>
@@ -120,37 +105,36 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col flex-1">
-      <DashboardHeader dataSource={dataSource} />
+    <div className="flex min-h-screen flex-col">
+      <HeroHeader dataSource={dataSource} />
 
-      <main className="flex-1 space-y-8 overflow-y-auto p-8">
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-10 px-4 py-10 md:px-8 md:py-12 lg:space-y-14 lg:py-16">
         {/* Live Sensors */}
         <section>
-          <h2 className="font-heading text-lg font-bold text-foreground">
-            Live Sensors
+          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
+            Environmental Sensors
           </h2>
-          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <p className="mt-1 text-sm text-muted-foreground">
+            Real-time readings from the BME280 environmental sensor and pump controller
+          </p>
+          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <SensorCard
               label="Temperature"
-              value={
-                latest?.temperature_c != null
-                  ? `${latest.temperature_c.toFixed(1)}°C`
-                  : "N/A"
-              }
-              subtitle="BME280"
+              value={latest?.temperature_c != null ? `${latest.temperature_c.toFixed(1)}°C` : "N/A"}
+              subtitle="BME280 · Ambient air"
               accent={{ from: TEMP_ACCENT.from, to: TEMP_ACCENT.to }}
               tint={TEMP_ACCENT.tint}
+              info={INFO.temp}
+              delay={0}
             />
             <SensorCard
               label="Humidity"
-              value={
-                latest?.humidity_perc != null
-                  ? `${Math.round(latest.humidity_perc)}%`
-                  : "N/A"
-              }
-              subtitle="BME280"
+              value={latest?.humidity_perc != null ? `${Math.round(latest.humidity_perc)}%` : "N/A"}
+              subtitle="BME280 · Relative"
               accent={{ from: HUMIDITY_ACCENT.from, to: HUMIDITY_ACCENT.to }}
               tint={HUMIDITY_ACCENT.tint}
+              info={INFO.humidity}
+              delay={0.05}
             />
             <SensorCard
               label="Pump Status"
@@ -158,58 +142,103 @@ export default function DashboardPage() {
               subtitle="All zones off"
               accent={{ from: PUMP_ACCENT.from, to: PUMP_ACCENT.to }}
               tint={PUMP_ACCENT.tint}
+              info={INFO.pump}
+              delay={0.1}
             />
-            <LiveLogCard live={live} updatedAt={liveUpdated} />
+            <SensorCard
+              label="Vapour Pressure"
+              value={latest?.temperature_c != null && latest?.humidity_perc != null ? `${((1 - latest.humidity_perc / 100) * 0.61078 * Math.exp((17.27 * latest.temperature_c) / (latest.temperature_c + 237.3))).toFixed(1)} kPa` : "N/A"}
+              subtitle="VPD · Calculated"
+              accent={{ from: "from-teal-500", to: "to-emerald-400" }}
+              tint="from-teal-500/5 to-emerald-500/5"
+              info="Vapour Pressure Deficit calculated from temperature & humidity. High VPD (>2.0 kPa) indicates plants are transpiring rapidly and may need irrigation."
+              delay={0.15}
+            />
           </div>
         </section>
 
         {/* Zone Moisture */}
         <section>
-          <h2 className="font-heading text-lg font-bold text-foreground">
-            Zone Moisture
+          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
+            Irrigation Zones
           </h2>
-          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <p className="mt-1 text-sm text-muted-foreground">
+            Soil moisture levels across the three experimental zones — Control, Stress, and AI-Managed
+          </p>
+          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
             <ZoneCard
               name="Zone 1 — Control"
               mode="Control"
               moisture={live?.moisture_zone_1 ?? latest?.moisture_zone_1 ?? null}
               accent={ZONE_ACCENTS.Control}
+              info={INFO.z1}
+              delay={0}
             />
             <ZoneCard
               name="Zone 2 — Stress"
               mode="Stress"
               moisture={live?.moisture_zone_2 ?? latest?.moisture_zone_2 ?? null}
               accent={ZONE_ACCENTS.Stress}
+              info={INFO.z2}
+              delay={0.05}
             />
             <ZoneCard
               name="Zone 3 — AI-Managed"
               mode="AI"
               moisture={live?.moisture_zone_3 ?? latest?.moisture_zone_3 ?? null}
               accent={ZONE_ACCENTS.AI}
+              info={INFO.z3}
+              delay={0.1}
             />
+          </div>
+        </section>
+
+        {/* Live Log — dedicated panel */}
+        <section>
+          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
+            Serial Monitor
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Live data stream from the Arduino Uno via USB serial (9600 baud)
+          </p>
+          <div className="mt-5">
+            <LiveLogPanel live={live} updatedAt={liveUpdated} />
           </div>
         </section>
 
         {/* 24-hour chart */}
         <section>
-          <h2 className="font-heading text-lg font-bold text-foreground">
+          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             24-Hour History
           </h2>
-          <div className="mt-3">
+          <p className="mt-1 text-sm text-muted-foreground">
+            Historical sensor readings with downsampled display for trend analysis
+          </p>
+          <div className="mt-5">
             <SensorChart data={history} />
           </div>
         </section>
 
         {/* Plant Health */}
         <section>
-          <h2 className="font-heading text-lg font-bold text-foreground">
+          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             Plant Health
           </h2>
-          <div className="mt-3">
+          <p className="mt-1 text-sm text-muted-foreground">
+            CNN-based crop disease detection and growth stage classification
+          </p>
+          <div className="mt-5">
             <PlantHealthCard />
           </div>
         </section>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-card py-6">
+        <p className="text-center text-xs text-muted-foreground">
+          Edge AI Framework — FYP 2026 · Afe Babalola University, Ado-Ekiti
+        </p>
+      </footer>
     </div>
   );
 }

@@ -50,17 +50,17 @@ export default function SensorChart({ data }: Props) {
   const lastTs = data[data.length - 1]?.timestamp ?? "";
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-card transition-shadow duration-300 hover:shadow-elevated md:p-6">
+      <div className="mb-4 flex items-start justify-between">
         <div>
-          <h3 className="font-heading text-sm font-bold text-foreground">
-            Moisture & Temperature
+          <h3 className="font-heading text-base font-bold text-foreground">
+            Moisture &amp; Temperature
           </h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {formatDate(firstTs)} — {formatDate(lastTs)}
           </p>
         </div>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-[#16a34a]" />
             Zone 1
@@ -80,7 +80,7 @@ export default function SensorChart({ data }: Props) {
         </div>
       </div>
 
-      <div className="h-64 w-full">
+      <div className="h-64 w-full md:h-72">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={sampled} margin={{ top: 4, right: 4, bottom: 4, left: -16 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -117,6 +117,7 @@ export default function SensorChart({ data }: Props) {
                 border: "1px solid var(--color-border)",
                 borderRadius: 12,
                 fontSize: 12,
+                boxShadow: "0 4px 6px rgba(0,0,0,0.07)",
               }}
               labelFormatter={(label) => {
                 const d = new Date(label);
@@ -136,7 +137,7 @@ export default function SensorChart({ data }: Props) {
               stroke="#16a34a"
               fill="#16a34a"
               fillOpacity={0.08}
-              strokeWidth={1.5}
+              strokeWidth={2}
               dot={false}
               name="Zone 1"
             />
@@ -147,7 +148,7 @@ export default function SensorChart({ data }: Props) {
               stroke="#d97706"
               fill="#d97706"
               fillOpacity={0.08}
-              strokeWidth={1.5}
+              strokeWidth={2}
               dot={false}
               name="Zone 2"
             />
@@ -158,7 +159,7 @@ export default function SensorChart({ data }: Props) {
               stroke="#3b82f6"
               fill="#3b82f6"
               fillOpacity={0.08}
-              strokeWidth={1.5}
+              strokeWidth={2}
               dot={false}
               name="Zone 3"
             />
@@ -169,7 +170,7 @@ export default function SensorChart({ data }: Props) {
               stroke="#dc2626"
               fill="#dc2626"
               fillOpacity={0.05}
-              strokeWidth={1.5}
+              strokeWidth={2}
               dot={false}
               name="Temperature"
             />

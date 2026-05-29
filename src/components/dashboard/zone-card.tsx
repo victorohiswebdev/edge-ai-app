@@ -1,11 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { InfoTooltip } from "./info-tooltip";
 
 interface Props {
   name: string;
   mode: string;
   moisture: number | null;
+  info: string;
   accent: {
     from: string;
     to: string;
@@ -14,15 +16,16 @@ interface Props {
     tint: string;
     badge: string;
   };
+  delay?: number;
 }
 
 const modeLabels: Record<string, string> = {
-  Control: "bg-success/10 text-success",
-  Stress: "bg-warning/10 text-warning",
-  AI: "bg-info/10 text-info",
+  Control: "bg-success/10 text-success border border-success/20",
+  Stress: "bg-warning/10 text-warning border border-warning/20",
+  AI: "bg-info/10 text-info border border-info/20",
 };
 
-export function ZoneCard({ name, mode, moisture, accent }: Props) {
+export function ZoneCard({ name, mode, moisture, info, accent, delay = 0 }: Props) {
   const pct = moisture ?? 0;
   const display = moisture != null ? `${pct}%` : "N/A";
   const barWidth = moisture != null ? `${pct}%` : "0%";
@@ -30,12 +33,12 @@ export function ZoneCard({ name, mode, moisture, accent }: Props) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.4, delay: 0.05 }}
-      whileHover={{ y: -4, scale: 1.01 }}
-      className="group relative rounded-2xl border border-border bg-card p-5 shadow-sm transition-shadow duration-300 hover:shadow-xl"
+      transition={{ duration: 0.45, delay }}
+      whileHover={{ y: -6, scale: 1.02 }}
+      className="group relative rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-300 hover:shadow-elevated"
     >
       {/* Gradient overlay */}
       <div
@@ -48,31 +51,48 @@ export function ZoneCard({ name, mode, moisture, accent }: Props) {
       />
 
       {/* Corner dots */}
-      <div className="absolute right-3 top-3 flex gap-1 opacity-0 transition-opacity duration-400 group-hover:opacity-100">
-        <span className={`h-1.5 w-1.5 rounded-full ${accent.dot}`} />
-        <span className={`h-1.5 w-1.5 rounded-full ${accent.dot} opacity-60`} />
+      <div className="absolute right-3 top-3 flex gap-1">
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${accent.dot} opacity-0 transition-opacity duration-400 group-hover:opacity-100`}
+        />
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${accent.dot} opacity-0 transition-opacity duration-400 group-hover:opacity-60`}
+        />
       </div>
 
       <div className="relative">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{name}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              {name}
+            </p>
+            <InfoTooltip content={info} />
+          </div>
           <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${modeStyle}`}
+            className={`rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider ${modeStyle}`}
           >
             {mode}
           </span>
         </div>
 
-        <p className="mt-2 font-heading text-3xl font-bold tracking-tight text-card-foreground">
+        <p className="mt-2 font-heading text-4xl font-black tracking-tight text-card-foreground md:text-[2.5rem]">
           {display}
         </p>
 
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-          <motion.div
-            className={`h-full rounded-full ${accent.progress} transition-all duration-700`}
-            initial={{ width: "0%" }}
-            animate={{ width: barWidth }}
-          />
+        {/* Progress bar with label */}
+        <div className="mt-4">
+          <div className="mb-1.5 flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <span>Soil Moisture</span>
+            <span>{moisture != null ? `${Math.round(pct)}%` : "—"}</span>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+            <motion.div
+              className={`h-full rounded-full ${accent.progress}`}
+              initial={{ width: "0%" }}
+              animate={{ width: barWidth }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
+          </div>
         </div>
       </div>
     </motion.div>
