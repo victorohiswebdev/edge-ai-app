@@ -95,9 +95,7 @@ export default function SystemHealthCard({ health }: Props) {
                       : key === "humidity"
                         ? `${s.value}%`
                         : `${s.value}%`
-                    : s.status === "inactive"
-                      ? "unplugged"
-                      : s.status}
+                    : "no data"}
                 </span>
               </div>
             );
