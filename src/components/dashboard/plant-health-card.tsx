@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export function PlantHealthCard() {
   return (
     <div className="group relative flex h-56 items-center justify-center overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-emerald-500/5 to-teal-500/5 shadow-card transition-shadow duration-200 hover:shadow-elevated">
@@ -44,6 +46,14 @@ export function PlantHealthCard() {
           <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_4px_rgba(22,163,74,0.5)]" />
           Phase 4 — In Development
         </span>
+
+        <Link
+          href="/camera-lab"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-[11px] font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
+        >
+          <span>📷</span>
+          Camera Lab
+        </Link>
       </div>
     </div>
   );

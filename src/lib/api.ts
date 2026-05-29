@@ -101,6 +101,26 @@ export async function emergencyStop(): Promise<{ success: boolean; message: stri
   }
 }
 
+// ─── Camera API ──────────────────────────────────────────────────
+
+export async function captureSnapshot(): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/camera/snapshot`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    // Return the blob URL
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCaptures(limit = 10): Promise<{ captures: { filename: string; timestamp: string; size_bytes: number }[] } | null> {
+  return fetchJson(`${API_BASE}/api/v1/camera/captures?limit=${limit}`);
+}
+
 // ─── Synthetic fallback data ───────────────────────────────────────
 
 /** Generate a realistic sensor reading for the current time. */
