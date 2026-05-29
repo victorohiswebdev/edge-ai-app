@@ -1,12 +1,13 @@
 /*
  * Phase 2: Sensor Reader + Actuation Controller
  * 
- * Dual-function sketch:
- *   1. Reads sensors and sends JSON every 2s (BME280 is now OPTIONAL)
- *   2. Listens for pump commands from Pi over serial
+ * Dual-function sketch (REVISED LOOP ORDER — v2.1):
+ *   1. Listens for pump commands from Pi over serial (BEFORE sensor send)
+ *      → Sends ack immediately so Pi's _poll_pump_commands reads it cleanly
+ *   2. Reads sensors and sends JSON every 2s
  * 
- * v2.0 — BME280 is optional. System continues running without it.
- *         Temperature/humidity show as "null" in JSON when absent.
+ * v2.1 — Command check moved to TOP of loop to fix ack timing bug.
+ *         Pi now reads the ack before the next sensor data line arrives.
  * 
  * Pi sends commands like:
  *   {"pump_1":"ON"}   →  turns Zone 1 pump ON
@@ -73,39 +74,9 @@ void setup() {
 }
 
 void loop() {
-  // ─── PART 1: Read & Send Sensor Data ─────────────────────────
-  int percent1 = constrain(map(analogRead(soilPin1), dryValue, wetValue, 0, 100), 0, 100);
-  int percent2 = constrain(map(analogRead(soilPin2), dryValue, wetValue, 0, 100), 0, 100);
-  int percent3 = constrain(map(analogRead(soilPin3), dryValue, wetValue, 0, 100), 0, 100);
-
-  StaticJsonDocument<256> sensorDoc;
-  sensorDoc["moisture_zone_1"] = percent1;
-  sensorDoc["moisture_zone_2"] = percent2;
-  sensorDoc["moisture_zone_3"] = percent3;
-
-  // Read BME280 only if available, with sanity check
-  if (bme_ok) {
-    float temp  = bme.readTemperature();
-    float humid = bme.readHumidity();
-    float press = bme.readPressure() / 100.0F;
-
-    // Reject floating-bus garbage values
-    if (temp >= -40 && temp <= 85 && humid >= 0 && humid <= 100 && press >= 300 && press <= 1100) {
-      sensorDoc["temperature_c"] = temp;
-      sensorDoc["humidity_perc"] = humid;
-    } else {
-      sensorDoc["temperature_c"] = nullptr;
-      sensorDoc["humidity_perc"] = nullptr;
-    }
-  } else {
-    sensorDoc["temperature_c"] = nullptr;
-    sensorDoc["humidity_perc"] = nullptr;
-  }
-
-  serializeJson(sensorDoc, Serial);
-  Serial.println();
-
-  // ─── PART 2: Listen for Pi Commands ──────────────────────────
+  // ─── PART 1: Listen for Pi Commands (BEFORE sensor send) ────
+  // This ensures the Pi's _poll_pump_commands can read the ack
+  // _before_ the next sensor data line arrives.
   if (Serial.available() > 0) {
     incomingCommand = Serial.readStringUntil('\n');
     incomingCommand.trim();
@@ -144,6 +115,38 @@ void loop() {
       }
     }
   }
+
+  // ─── PART 2: Read & Send Sensor Data ─────────────────────────
+  int percent1 = constrain(map(analogRead(soilPin1), dryValue, wetValue, 0, 100), 0, 100);
+  int percent2 = constrain(map(analogRead(soilPin2), dryValue, wetValue, 0, 100), 0, 100);
+  int percent3 = constrain(map(analogRead(soilPin3), dryValue, wetValue, 0, 100), 0, 100);
+
+  StaticJsonDocument<256> sensorDoc;
+  sensorDoc["moisture_zone_1"] = percent1;
+  sensorDoc["moisture_zone_2"] = percent2;
+  sensorDoc["moisture_zone_3"] = percent3;
+
+  // Read BME280 only if available, with sanity check
+  if (bme_ok) {
+    float temp  = bme.readTemperature();
+    float humid = bme.readHumidity();
+    float press = bme.readPressure() / 100.0F;
+
+    // Reject floating-bus garbage values
+    if (temp >= -40 && temp <= 85 && humid >= 0 && humid <= 100 && press >= 300 && press <= 1100) {
+      sensorDoc["temperature_c"] = temp;
+      sensorDoc["humidity_perc"] = humid;
+    } else {
+      sensorDoc["temperature_c"] = nullptr;
+      sensorDoc["humidity_perc"] = nullptr;
+    }
+  } else {
+    sensorDoc["temperature_c"] = nullptr;
+    sensorDoc["humidity_perc"] = nullptr;
+  }
+
+  serializeJson(sensorDoc, Serial);
+  Serial.println();
 
   delay(2000);
 }
