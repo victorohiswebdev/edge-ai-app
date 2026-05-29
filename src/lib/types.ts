@@ -54,3 +54,24 @@ export interface SystemStatus {
   last_reading: string | null;
   total_readings: number;
 }
+
+export interface SystemHealth {
+  status: "healthy" | "degraded" | "offline";
+  arduino: {
+    detected: boolean;
+    port: string | null;
+    connected: boolean;
+    last_reading_seconds_ago: number | null;
+  };
+  sensors: Record<string, { status: string; value?: number | null; note?: string }>;
+  services: Record<string, { running: boolean }>;
+  database: {
+    size_mb: number | null;
+    total_readings: number;
+    last_write_seconds_ago: number | null;
+  };
+  heartbeat: {
+    logger_active: boolean;
+    last_heartbeat: string | null;
+  };
+}

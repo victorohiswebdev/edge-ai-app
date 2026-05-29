@@ -12,6 +12,7 @@ import type {
   SensorSummary,
   SystemStatus,
   LiveReading,
+  SystemHealth,
   WithSource,
 } from "./types";
 
@@ -58,6 +59,10 @@ export async function fetchSummary(
 
 export async function fetchSystemStatus(): Promise<SystemStatus | null> {
   return fetchJson<SystemStatus>(`${API_BASE}/api/v1/system/status`);
+}
+
+export async function fetchSystemHealth(): Promise<SystemHealth | null> {
+  return fetchJson<SystemHealth>(`${API_BASE}/api/v1/system/health`);
 }
 
 // ─── Synthetic fallback data ───────────────────────────────────────

@@ -7,8 +7,9 @@ import type {
   DataSource,
   LiveReading,
   SensorSummary,
+  SystemHealth,
 } from "@/lib/types";
-import { getLatestReading, getHistory, getSummary, fetchLiveReading } from "@/lib/api";
+import { getLatestReading, getHistory, getSummary, fetchLiveReading, fetchSystemHealth } from "@/lib/api";
 import { HeroHeader } from "@/components/dashboard/hero-header";
 import { SensorCard } from "@/components/dashboard/sensor-card";
 import { LiveLogPanel } from "@/components/dashboard/live-log-panel";
@@ -16,6 +17,7 @@ import { ZoneCard } from "@/components/dashboard/zone-card";
 import { PlantHealthCard } from "@/components/dashboard/plant-health-card";
 import { SkeletonCard } from "@/components/dashboard/skeleton-card";
 import SensorChart from "@/components/SensorChart";
+import SystemHealthCard from "@/components/SystemHealthCard";
 
 // ─── Accent profiles ──────────────────────────────────────────
 
@@ -71,13 +73,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState<DataSource>("synthetic");
   const [liveUpdated, setLiveUpdated] = useState<string>("—");
+  const [health, setHealth] = useState<SystemHealth | null>(null);
 
   const refresh = useCallback(async () => {
-    const [l, liv, h, s] = await Promise.all([
+    const [l, liv, h, s, he] = await Promise.all([
       getLatestReading(),
       fetchLiveReading(),
       getHistory(24, 200),
       getSummary(24),
+      fetchSystemHealth(),
     ]);
     setLatest(l.data);
     if (liv) {
@@ -87,6 +91,7 @@ export default function DashboardPage() {
     setHistory(h.data);
     setSummary(s.data);
     setDataSource(l.source);
+    if (he) setHealth(he);
     setLoading(false);
   }, []);
 
@@ -97,6 +102,7 @@ export default function DashboardPage() {
     const slow = setInterval(() => {
       getHistory(24, 200).then(h => setHistory(h.data));
       getSummary(24).then(s => setSummary(s.data));
+      fetchSystemHealth().then(h => setHealth(h));
     }, 120000);
     return () => { clearInterval(quick); clearInterval(slow); };
   }, [refresh]);
@@ -222,6 +228,19 @@ export default function DashboardPage() {
           </p>
           <div className="mt-5">
             <SensorChart data={history} />
+          </div>
+        </section>
+
+        {/* System Health */}
+        <section style={{ contentVisibility: "auto" }}>
+          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
+            System Health
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Real-time status of all hardware and software subsystems
+          </p>
+          <div className="mt-5 max-w-sm">
+            <SystemHealthCard health={health} />
           </div>
         </section>
 
