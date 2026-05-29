@@ -25,6 +25,7 @@ import PumpControl from "@/components/PumpControl";
 
 const TEMP_ACCENT = { from: "from-green-500", to: "to-teal-400", tint: "from-green-500/5 to-teal-500/5" };
 const HUMIDITY_ACCENT = { from: "from-sky-500", to: "to-cyan-400", tint: "from-sky-500/5 to-cyan-500/5" };
+const PUMP_ACCENT = { from: "from-amber-500", to: "to-orange-400", tint: "from-amber-500/5 to-orange-500/5" };
 
 const ZONE_ACCENTS: Record<string, { from: string; to: string; dot: string; progress: string; tint: string; badge: string }> = {
   Control: {
@@ -49,7 +50,6 @@ const ZONE_ACCENTS: Record<string, { from: string; to: string; dot: string; prog
 const INFO = {
   temp: "Ambient air temperature measured by the BME280 sensor at canopy height. Used to calculate evapotranspiration rates and VPD for precision irrigation scheduling.",
   humidity: "Relative humidity reading from the BME280 sensor. Combined with temperature to compute vapour pressure deficit — a key input to the predictive irrigation model.",
-  pump: "Current pump activation state. The Random Forest model predicts when each zone needs irrigation and triggers the relay-controlled pump system.",
   vpd: "Vapour Pressure Deficit calculated from temperature & humidity. High VPD (>2.0 kPa) indicates plants are transpiring rapidly and may need irrigation.",
   z1: "Control zone — baseline irrigation without AI intervention. Watered on a fixed schedule to serve as experimental control for comparing water usage and plant health.",
   z2: "Stress zone — deliberately reduced irrigation to observe plant physiological response under water-limited conditions. Tests the system's drought detection capability.",
@@ -102,7 +102,6 @@ export default function DashboardPage() {
   useEffect(() => {
     refresh();
     const quick = setInterval(refresh, 10000);
-    // Chart data refreshes slower — no need every 10s
     const slow = setInterval(() => {
       getHistory(24, 200).then(h => setHistory(h.data));
       getSummary(24).then(s => setSummary(s.data));
@@ -132,15 +131,15 @@ export default function DashboardPage() {
       <HeroHeader dataSource={dataSource} />
 
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-10 px-4 py-10 md:px-8 md:py-12 lg:space-y-14 lg:py-16">
-        {/* Live Sensors */}
+        {/* Environmental Sensors */}
         <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             Environmental Sensors
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Real-time readings from the BME280 environmental sensor and pump controller
+            Real-time readings from the BME280 environmental sensor
           </p>
-          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <SensorCard
               label="Temperature"
               value={latest?.temperature_c != null ? `${latest.temperature_c.toFixed(1)}°C` : "N/A"}
@@ -157,7 +156,6 @@ export default function DashboardPage() {
               tint={HUMIDITY_ACCENT.tint}
               info={INFO.humidity}
             />
-            <PumpControl pumpStatus={pumpStatus} />
             <SensorCard
               label="Vapour Pressure"
               value={calcVPD(latest?.temperature_c, latest?.humidity_perc)}
@@ -169,7 +167,20 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Zone Moisture */}
+        {/* Pump Control — moved to own section */}
+        <section style={{ contentVisibility: "auto" }}>
+          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
+            Pump Control
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manual control for the three irrigation zones. Commands are queued and executed by the Arduino.
+          </p>
+          <div className="mt-5">
+            <PumpControl pumpStatus={pumpStatus} />
+          </div>
+        </section>
+
+        {/* Irrigation Zones */}
         <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             Irrigation Zones
@@ -202,7 +213,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Live Log */}
+        {/* Serial Monitor */}
         <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             Serial Monitor
@@ -215,7 +226,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* 24-hour chart */}
+        {/* 24-Hour History */}
         <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             24-Hour History
@@ -228,7 +239,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* System Health */}
+        {/* System Health — expanded to full width */}
         <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
             System Health
@@ -236,7 +247,7 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Real-time status of all hardware and software subsystems
           </p>
-          <div className="mt-5 max-w-sm">
+          <div className="mt-5">
             <SystemHealthCard health={health} />
           </div>
         </section>
