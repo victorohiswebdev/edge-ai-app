@@ -84,8 +84,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     refresh();
-    const interval = setInterval(refresh, 10000);
-    return () => clearInterval(interval);
+    const quick = setInterval(refresh, 10000);
+    // Chart data doesn't need refreshing every 10s — 60s is plenty
+    const slow = setInterval(() => {
+      getHistory(24, 200).then(h => setHistory(h.data));
+      getSummary(24).then(s => setSummary(s.data));
+    }, 60000);
+    return () => { clearInterval(quick); clearInterval(slow); };
   }, [refresh]);
 
   if (loading) {
