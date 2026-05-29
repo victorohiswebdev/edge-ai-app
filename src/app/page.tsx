@@ -1,25 +1,32 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { LatestReading, SensorReading, DataSource } from "@/lib/types";
-import { getLatestReading, getHistory, getSummary } from "@/lib/api";
+import type { LatestReading, SensorReading, DataSource, LiveReading } from "@/lib/types";
+import { getLatestReading, getHistory, getSummary, fetchLiveReading } from "@/lib/api";
 import SensorChart from "@/components/SensorChart";
 import type { SensorSummary } from "@/lib/types";
 
 export default function DashboardPage() {
   const [latest, setLatest] = useState<LatestReading | null>(null);
+  const [live, setLive] = useState<LiveReading | null>(null);
   const [history, setHistory] = useState<SensorReading[]>([]);
   const [summary, setSummary] = useState<SensorSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState<DataSource>("synthetic");
+  const [liveUpdated, setLiveUpdated] = useState<string>("—");
 
   const refresh = useCallback(async () => {
-    const [l, h, s] = await Promise.all([
+    const [l, liv, h, s] = await Promise.all([
       getLatestReading(),
+      fetchLiveReading(),
       getHistory(24, 200),
       getSummary(24),
     ]);
     setLatest(l.data);
+    if (liv) {
+      setLive(liv);
+      setLiveUpdated(new Date().toLocaleTimeString());
+    }
     setHistory(h.data);
     setSummary(s.data);
     setDataSource(l.source);
@@ -28,7 +35,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     refresh();
-    // Poll every 10 seconds when backend is available
     const interval = setInterval(refresh, 10000);
     return () => clearInterval(interval);
   }, [refresh]);
@@ -53,7 +59,7 @@ export default function DashboardPage() {
       <Header dataSource={dataSource} />
 
       <main className="flex-1 space-y-6 overflow-y-auto p-8">
-        {/* Live sensor cards */}
+        {/* Live Sensors */}
         <section>
           <h2 className="font-heading text-lg font-bold text-foreground">
             Live Sensors
@@ -66,7 +72,7 @@ export default function DashboardPage() {
                   ? `${latest.temperature_c.toFixed(1)}°C`
                   : "N/A"
               }
-              subtitle="Ambient (BME280)"
+              subtitle="BME280"
             />
             <SensorCard
               label="Humidity"
@@ -75,22 +81,22 @@ export default function DashboardPage() {
                   ? `${Math.round(latest.humidity_perc)}%`
                   : "N/A"
               }
-              subtitle="Ambient (BME280)"
-            />
-            <SensorCard
-              label="Pressure"
-              value="1013 hPa"
-              subtitle="Atmospheric"
+              subtitle="BME280"
             />
             <SensorCard
               label="Pump Status"
               value="Idle"
               subtitle="All zones off"
             />
+            {/* Live Log card replaces old pressure card */}
+            <LiveLogCard
+              live={live}
+              updatedAt={liveUpdated}
+            />
           </div>
         </section>
 
-        {/* Zone moisture cards */}
+        {/* Zone Moisture */}
         <section>
           <h2 className="font-heading text-lg font-bold text-foreground">
             Zone Moisture
@@ -99,17 +105,17 @@ export default function DashboardPage() {
             <ZoneCard
               name="Zone 1 — Control"
               mode="Control"
-              moisture={latest?.moisture_zone_1 ?? null}
+              moisture={live?.moisture_zone_1 ?? latest?.moisture_zone_1 ?? null}
             />
             <ZoneCard
               name="Zone 2 — Stress"
               mode="Stress"
-              moisture={latest?.moisture_zone_2 ?? null}
+              moisture={live?.moisture_zone_2 ?? latest?.moisture_zone_2 ?? null}
             />
             <ZoneCard
               name="Zone 3 — AI-Managed"
               mode="AI"
-              moisture={latest?.moisture_zone_3 ?? null}
+              moisture={live?.moisture_zone_3 ?? latest?.moisture_zone_3 ?? null}
             />
           </div>
         </section>
@@ -177,14 +183,12 @@ function Header({ dataSource }: { dataSource: DataSource }) {
         </p>
       </div>
       <div className="flex items-center gap-4">
-        {/* Data source indicator */}
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${badge.bg}`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} />
           {badge.label}
         </span>
-        {/* System status */}
         <span className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="h-2 w-2 rounded-full bg-success" />
           System Online
@@ -210,6 +214,30 @@ function SensorCard({
         {value}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+    </div>
+  );
+}
+
+function LiveLogCard({
+  live,
+  updatedAt,
+}: {
+  live: LiveReading | null;
+  updatedAt: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <p className="text-sm text-muted-foreground">Live Log</p>
+      <div className="mt-2 space-y-1 font-mono text-xs">
+        <p>Temp: {live?.temperature_c != null ? `${live.temperature_c.toFixed(1)}°C` : "N/A"}</p>
+        <p>Humidity: {live?.humidity_perc != null ? `${Math.round(live.humidity_perc)}%` : "N/A"}</p>
+        <p>Z1: {live?.moisture_zone_1 != null ? `${live.moisture_zone_1}%` : "N/A"}</p>
+        <p>Z2: {live?.moisture_zone_2 != null ? `${live.moisture_zone_2}%` : "N/A"}</p>
+        <p>Z3: {live?.moisture_zone_3 != null ? `${live.moisture_zone_3}%` : "N/A"}</p>
+      </div>
+      <p className="mt-2 text-[10px] text-muted-foreground">
+        Last read: {updatedAt}
+      </p>
     </div>
   );
 }

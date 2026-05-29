@@ -11,6 +11,7 @@ import type {
   SensorReading,
   SensorSummary,
   SystemStatus,
+  LiveReading,
   WithSource,
 } from "./types";
 
@@ -32,6 +33,10 @@ async function fetchJson<T>(url: string): Promise<T | null> {
 
 export async function fetchLatestReading(): Promise<LatestReading | null> {
   return fetchJson<LatestReading>(`${API_BASE}/api/v1/sensors/latest`);
+}
+
+export async function fetchLiveReading(): Promise<LiveReading | null> {
+  return fetchJson<LiveReading>(`${API_BASE}/api/v1/sensors/live`);
 }
 
 export async function fetchHistory(

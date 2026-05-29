@@ -30,6 +30,15 @@ export interface SensorSummary {
   to_timestamp: string;
 }
 
+export interface LiveReading {
+  moisture_zone_1: number | null;
+  moisture_zone_2: number | null;
+  moisture_zone_3: number | null;
+  temperature_c: number | null;
+  humidity_perc: number | null;
+  timestamp: string;
+}
+
 // ─── Data source tracking ─────────────────────────────────
 
 export type DataSource = "synthetic" | "database" | "live";
