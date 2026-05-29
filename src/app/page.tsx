@@ -8,8 +8,9 @@ import type {
   LiveReading,
   SensorSummary,
   SystemHealth,
+  PumpStatus,
 } from "@/lib/types";
-import { getLatestReading, getHistory, getSummary, fetchLiveReading, fetchSystemHealth } from "@/lib/api";
+import { getLatestReading, getHistory, getSummary, fetchLiveReading, fetchSystemHealth, fetchPumpStatus } from "@/lib/api";
 import { HeroHeader } from "@/components/dashboard/hero-header";
 import { SensorCard } from "@/components/dashboard/sensor-card";
 import { LiveLogPanel } from "@/components/dashboard/live-log-panel";
@@ -18,12 +19,12 @@ import { PlantHealthCard } from "@/components/dashboard/plant-health-card";
 import { SkeletonCard } from "@/components/dashboard/skeleton-card";
 import SensorChart from "@/components/SensorChart";
 import SystemHealthCard from "@/components/SystemHealthCard";
+import PumpControl from "@/components/PumpControl";
 
 // ─── Accent profiles ──────────────────────────────────────────
 
 const TEMP_ACCENT = { from: "from-green-500", to: "to-teal-400", tint: "from-green-500/5 to-teal-500/5" };
 const HUMIDITY_ACCENT = { from: "from-sky-500", to: "to-cyan-400", tint: "from-sky-500/5 to-cyan-500/5" };
-const PUMP_ACCENT = { from: "from-amber-500", to: "to-orange-400", tint: "from-amber-500/5 to-orange-500/5" };
 
 const ZONE_ACCENTS: Record<string, { from: string; to: string; dot: string; progress: string; tint: string; badge: string }> = {
   Control: {
@@ -74,14 +75,16 @@ export default function DashboardPage() {
   const [dataSource, setDataSource] = useState<DataSource>("synthetic");
   const [liveUpdated, setLiveUpdated] = useState<string>("—");
   const [health, setHealth] = useState<SystemHealth | null>(null);
+  const [pumpStatus, setPumpStatus] = useState<PumpStatus | null>(null);
 
   const refresh = useCallback(async () => {
-    const [l, liv, h, s, he] = await Promise.all([
+    const [l, liv, h, s, he, ps] = await Promise.all([
       getLatestReading(),
       fetchLiveReading(),
       getHistory(24, 200),
       getSummary(24),
       fetchSystemHealth(),
+      fetchPumpStatus(),
     ]);
     setLatest(l.data);
     if (liv) {
@@ -92,6 +95,7 @@ export default function DashboardPage() {
     setSummary(s.data);
     setDataSource(l.source);
     if (he) setHealth(he);
+    if (ps) setPumpStatus(ps);
     setLoading(false);
   }, []);
 
@@ -153,14 +157,7 @@ export default function DashboardPage() {
               tint={HUMIDITY_ACCENT.tint}
               info={INFO.humidity}
             />
-            <SensorCard
-              label="Pump Status"
-              value="Idle"
-              subtitle="All zones off"
-              accent={{ from: PUMP_ACCENT.from, to: PUMP_ACCENT.to }}
-              tint={PUMP_ACCENT.tint}
-              info={INFO.pump}
-            />
+            <PumpControl pumpStatus={pumpStatus} />
             <SensorCard
               label="Vapour Pressure"
               value={calcVPD(latest?.temperature_c, latest?.humidity_perc)}

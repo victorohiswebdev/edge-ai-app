@@ -75,3 +75,12 @@ export interface SystemHealth {
     last_heartbeat: string | null;
   };
 }
+
+// ─── Pump Control ─────────────────────────────────
+
+export interface PumpStatus {
+  pump_1: "ON" | "OFF";
+  pump_2: "ON" | "OFF";
+  pump_3: "ON" | "OFF";
+  updated_at: string | null;
+}

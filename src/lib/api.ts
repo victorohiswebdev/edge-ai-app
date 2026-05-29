@@ -13,6 +13,7 @@ import type {
   SystemStatus,
   LiveReading,
   SystemHealth,
+  PumpStatus,
   WithSource,
 } from "./types";
 
@@ -63,6 +64,41 @@ export async function fetchSystemStatus(): Promise<SystemStatus | null> {
 
 export async function fetchSystemHealth(): Promise<SystemHealth | null> {
   return fetchJson<SystemHealth>(`${API_BASE}/api/v1/system/health`);
+}
+
+// ─── Pump API ────────────────────────────────────────────────────
+
+export async function sendPumpCommand(
+  zone: number,
+  command: "ON" | "OFF"
+): Promise<{ status: string; message: string } | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/pumps/command`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ zone, command }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchPumpStatus(): Promise<PumpStatus | null> {
+  return fetchJson<PumpStatus>(`${API_BASE}/api/v1/pumps/status`);
+}
+
+export async function emergencyStop(): Promise<{ success: boolean; message: string } | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/pumps/emergency-stop`, {
+      method: "POST",
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 // ─── Synthetic fallback data ───────────────────────────────────────
