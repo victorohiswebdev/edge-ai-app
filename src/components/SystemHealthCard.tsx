@@ -12,7 +12,6 @@ function Dot({ status }: { status: string }) {
     healthy: "bg-success",
     running: "bg-success",
     detected: "bg-success",
-    inactive: "bg-muted-foreground",
     error: "bg-destructive",
     degraded: "bg-warning",
     offline: "bg-destructive",
