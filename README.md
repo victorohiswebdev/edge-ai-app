@@ -12,20 +12,23 @@ A real-time monitoring dashboard for a smart farming system that runs fully offl
 ┌──────────────────┐     USB Serial      ┌──────────────────┐
 │   Arduino Uno     │◄──────────────────►│  Raspberry Pi 4   │
 │  3× Moisture +    │   9600 baud JSON   │  data_logger.py   │
-│  BME280 (optional)│                     │  → SQLite3        │
+│  BME280 (optional)│   pump commands    │  → SQLite3         │
 └──────┬───────────┘                     └────────┬──────────┘
        │                                          │
        ▼                                          ▼
   ┌──────────┐                              ┌──────────────┐
   │ 3× Pumps │                              │  FastAPI      │
-  │ (Relays) │                              │  (Read-only)  │
-  └──────────┘                              └──────┬───────┘
-                                                   │
-                                                   ▼
-                                            ┌──────────────┐
-                                            │  Dashboard    │
-                                            │  (Next.js)    │
-                                            └──────────────┘
+  │ (Relays) │                              │  (Read +      │
+  └──────────┘                              │   Pump POSTs) │
+                                             └──────┬───────┘
+                                                    │
+                                                    ▼
+                                             ┌──────────────┐
+                                             │  Dashboard    │
+                                             │  (Next.js)    │
+                                             │  Sensor data  │
+                                             │  + PumpControl│
+                                             └──────────────┘
 ```
 
 **Stack:** Next.js 16.2.6 · React 19.2.4 · Tailwind CSS v4 · TypeScript 5 · Framer Motion 12
@@ -60,12 +63,19 @@ edge-ai-app/
 │       ├── poppins/               ← Poppins (self-hosted body font)
 │       └── space-grotesk/         ← Space Grotesk (self-hosted heading font)
 ├── src/
+│   ├── components/
+│   │   ├── dashboard/         ← Dashboard cards (hero, sensor, zone, live-log, etc.)
+│   │   ├── SensorChart.tsx    ← 24-hour history chart (Recharts)
+│   │   ├── SystemHealthCard.tsx ← Hardware + service health panel
+│   │   └── PumpControl.tsx    ← Per-zone ON/OFF + emergency stop
 │   ├── lib/
-│   │   └── fonts.ts               ← next/font/local configuration
+│   │   ├── fonts.ts           ← next/font/local configuration
+│   │   ├── types.ts           ← TypeScript interfaces matching API schemas
+│   │   └── api.ts             ← API fetch layer + synthetic fallback
 │   └── app/
-│       ├── globals.css            ← Tailwind v4 @theme brand tokens
-│       ├── layout.tsx             ← Root layout with font loading
-│       └── page.tsx               ← Dashboard homepage
+│       ├── globals.css        ← Tailwind v4 @theme brand tokens
+│       ├── layout.tsx         ← Root layout with font loading
+│       └── page.tsx           ← Dashboard homepage (thin orchestrator)
 ├── next.config.ts
 └── package.json
 ```

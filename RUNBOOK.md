@@ -126,7 +126,9 @@ sudo journalctl -u edge-ai-api -f
 sudo journalctl -u edge-ai-logger -f
 ```
 
-## Dashboard Data Source Indicator
+## Dashboard Interface
+
+### Dashboard Data Source Indicator
 
 The header of the dashboard shows a badge indicating the current data pipeline status:
 
@@ -138,9 +140,19 @@ The header of the dashboard shows a badge indicating the current data pipeline s
 
 The dashboard polls the API and system status every 10 seconds. The badge updates automatically when the pipeline state changes.
 
-## Troubleshooting
+### Pump Control
 
-### View crash logs
+The **PumpControl** component replaces the static "Pump Status — Idle" card with interactive per-zone controls:
+
+- 3 zone cards with **ON/OFF buttons** — each zone shows current state (OFF / ON / sending)
+- **State machine:** idle → sending (buttons disabled) → acknowledged
+- **Auto-poll** — when any pump is ON, polls `GET /api/v1/pumps/status` every 3 seconds
+- **Emergency All-Off** — red button with confirmation dialog, clears queue + sets all OFF
+- **Optimistic UI** — buttons update instantly on click (no waiting for ack) for responsive feel
+
+Flow: Dashboard POST → API enqueues to `pump_commands` table → `data_logger.py` polls → sends JSON over serial → Arduino toggles relay → ack → `pump_status` updated → dashboard sees new state.
+
+## Troubleshooting
 
 ```bash
 # Last 30 lines of errors
@@ -202,12 +214,15 @@ sudo usermod -a -G dialout $USER
 
 ## Database Notes
 
-Two tables in `farm_data.db`:
+Five tables in `farm_data.db`:
 
 | Table | Purpose | Written by |
 |---|---|---|
 | `sensor_logs` | Sensor readings (moisture, temp, humidity) | `data_logger.py` (every 300s) |
+| `latest_reading` | Most recent sensor snapshot (updated every 2s) | `data_logger.py` (every read) |
 | `system_log` | Logger heartbeat + system events | `data_logger.py` (on each write cycle) |
+| `pump_commands` | Command queue — pending ON/OFF per zone | API (dashboard → POST) |
+| `pump_status` | Current pump state (pump_1/2/3: ON/OFF) | `data_logger.py` (on ack) |
 
 Rules:
 - **Single writer:** `data_logger.py` is the only process that writes to the database
