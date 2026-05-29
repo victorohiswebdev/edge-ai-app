@@ -1,10 +1,70 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { LatestReading, SensorReading, DataSource, LiveReading } from "@/lib/types";
+import type {
+  LatestReading,
+  SensorReading,
+  DataSource,
+  LiveReading,
+  SensorSummary,
+} from "@/lib/types";
 import { getLatestReading, getHistory, getSummary, fetchLiveReading } from "@/lib/api";
+import { DashboardHeader } from "@/components/dashboard/header";
+import { SensorCard } from "@/components/dashboard/sensor-card";
+import { LiveLogCard } from "@/components/dashboard/live-log-card";
+import { ZoneCard } from "@/components/dashboard/zone-card";
+import { PlantHealthCard } from "@/components/dashboard/plant-health-card";
+import { SkeletonCard } from "@/components/dashboard/skeleton-card";
 import SensorChart from "@/components/SensorChart";
-import type { SensorSummary } from "@/lib/types";
+
+// ─── Accent profiles ──────────────────────────────────────────
+
+const TEMP_ACCENT = {
+  from: "from-green-500",
+  to: "to-teal-400",
+  tint: "from-green-500/5 to-teal-500/5",
+};
+
+const HUMIDITY_ACCENT = {
+  from: "from-sky-500",
+  to: "to-cyan-400",
+  tint: "from-sky-500/5 to-cyan-500/5",
+};
+
+const PUMP_ACCENT = {
+  from: "from-amber-500",
+  to: "to-orange-400",
+  tint: "from-amber-500/5 to-orange-500/5",
+};
+
+const ZONE_ACCENTS: Record<string, { from: string; to: string; dot: string; progress: string; tint: string; badge: string }> = {
+  Control: {
+    from: "from-green-500",
+    to: "to-emerald-400",
+    dot: "bg-green-500",
+    progress: "bg-gradient-to-r from-green-500 to-emerald-400",
+    tint: "from-green-500/5 to-emerald-500/5",
+    badge: "bg-success/10 text-success",
+  },
+  Stress: {
+    from: "from-amber-500",
+    to: "to-orange-400",
+    dot: "bg-amber-500",
+    progress: "bg-gradient-to-r from-amber-500 to-orange-400",
+    tint: "from-amber-500/5 to-orange-500/5",
+    badge: "bg-warning/10 text-warning",
+  },
+  AI: {
+    from: "from-blue-500",
+    to: "to-indigo-400",
+    dot: "bg-blue-500",
+    progress: "bg-gradient-to-r from-blue-500 to-indigo-400",
+    tint: "from-blue-500/5 to-indigo-500/5",
+    badge: "bg-info/10 text-info",
+  },
+};
+
+// ─── Page ─────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const [latest, setLatest] = useState<LatestReading | null>(null);
@@ -42,12 +102,17 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex flex-col flex-1">
-        <Header dataSource={dataSource} />
-        <main className="flex-1 overflow-y-auto p-8">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
+        <DashboardHeader dataSource={dataSource} />
+        <main className="flex-1 space-y-6 overflow-y-auto p-8">
+          <div>
+            <h2 className="font-heading text-lg font-bold text-foreground">
+              Live Sensors
+            </h2>
+            <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[...Array(4)].map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
           </div>
         </main>
       </div>
@@ -56,9 +121,9 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col flex-1">
-      <Header dataSource={dataSource} />
+      <DashboardHeader dataSource={dataSource} />
 
-      <main className="flex-1 space-y-6 overflow-y-auto p-8">
+      <main className="flex-1 space-y-8 overflow-y-auto p-8">
         {/* Live Sensors */}
         <section>
           <h2 className="font-heading text-lg font-bold text-foreground">
@@ -73,6 +138,8 @@ export default function DashboardPage() {
                   : "N/A"
               }
               subtitle="BME280"
+              accent={{ from: TEMP_ACCENT.from, to: TEMP_ACCENT.to }}
+              tint={TEMP_ACCENT.tint}
             />
             <SensorCard
               label="Humidity"
@@ -82,17 +149,17 @@ export default function DashboardPage() {
                   : "N/A"
               }
               subtitle="BME280"
+              accent={{ from: HUMIDITY_ACCENT.from, to: HUMIDITY_ACCENT.to }}
+              tint={HUMIDITY_ACCENT.tint}
             />
             <SensorCard
               label="Pump Status"
               value="Idle"
               subtitle="All zones off"
+              accent={{ from: PUMP_ACCENT.from, to: PUMP_ACCENT.to }}
+              tint={PUMP_ACCENT.tint}
             />
-            {/* Live Log card replaces old pressure card */}
-            <LiveLogCard
-              live={live}
-              updatedAt={liveUpdated}
-            />
+            <LiveLogCard live={live} updatedAt={liveUpdated} />
           </div>
         </section>
 
@@ -106,16 +173,19 @@ export default function DashboardPage() {
               name="Zone 1 — Control"
               mode="Control"
               moisture={live?.moisture_zone_1 ?? latest?.moisture_zone_1 ?? null}
+              accent={ZONE_ACCENTS.Control}
             />
             <ZoneCard
               name="Zone 2 — Stress"
               mode="Stress"
               moisture={live?.moisture_zone_2 ?? latest?.moisture_zone_2 ?? null}
+              accent={ZONE_ACCENTS.Stress}
             />
             <ZoneCard
               name="Zone 3 — AI-Managed"
               mode="AI"
               moisture={live?.moisture_zone_3 ?? latest?.moisture_zone_3 ?? null}
+              accent={ZONE_ACCENTS.AI}
             />
           </div>
         </section>
@@ -130,166 +200,16 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Plant health placeholder */}
+        {/* Plant Health */}
         <section>
           <h2 className="font-heading text-lg font-bold text-foreground">
             Plant Health
           </h2>
-          <div className="mt-3 flex h-48 items-center justify-center rounded-2xl border border-border bg-card">
-            <p className="text-sm text-muted-foreground">
-              CNN inference panel — coming soon
-            </p>
+          <div className="mt-3">
+            <PlantHealthCard />
           </div>
         </section>
       </main>
-    </div>
-  );
-}
-
-// ─── Sub-components ───────────────────────────────────────────────
-
-function Header({ dataSource }: { dataSource: DataSource }) {
-  const badgeConfig: Record<
-    DataSource,
-    { label: string; dot: string; bg: string }
-  > = {
-    live: {
-      label: "Live Data",
-      dot: "bg-success",
-      bg: "bg-success/10 text-success",
-    },
-    database: {
-      label: "Database",
-      dot: "bg-blue-500",
-      bg: "bg-blue-500/10 text-blue-500",
-    },
-    synthetic: {
-      label: "Simulated",
-      dot: "bg-warning",
-      bg: "bg-warning/10 text-warning",
-    },
-  };
-
-  const badge = badgeConfig[dataSource];
-
-  return (
-    <header className="flex items-center justify-between border-b border-border px-8 py-4">
-      <div>
-        <h1 className="font-heading text-2xl font-bold tracking-tight">
-          Smart Farming Dashboard
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Edge AI Framework — Predictive Water Management & Plant Health
-        </p>
-      </div>
-      <div className="flex items-center gap-4">
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${badge.bg}`}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} />
-          {badge.label}
-        </span>
-        <span className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="h-2 w-2 rounded-full bg-success" />
-          System Online
-        </span>
-      </div>
-    </header>
-  );
-}
-
-function SensorCard({
-  label,
-  value,
-  subtitle,
-}: {
-  label: string;
-  value: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 font-heading text-3xl font-bold tracking-tight text-card-foreground">
-        {value}
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
-    </div>
-  );
-}
-
-function LiveLogCard({
-  live,
-  updatedAt,
-}: {
-  live: LiveReading | null;
-  updatedAt: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <p className="text-sm text-muted-foreground">Live Log</p>
-      <div className="mt-2 space-y-1 font-mono text-xs">
-        <p>Temp: {live?.temperature_c != null ? `${live.temperature_c.toFixed(1)}°C` : "N/A"}</p>
-        <p>Humidity: {live?.humidity_perc != null ? `${Math.round(live.humidity_perc)}%` : "N/A"}</p>
-        <p>Z1: {live?.moisture_zone_1 != null ? `${live.moisture_zone_1}%` : "N/A"}</p>
-        <p>Z2: {live?.moisture_zone_2 != null ? `${live.moisture_zone_2}%` : "N/A"}</p>
-        <p>Z3: {live?.moisture_zone_3 != null ? `${live.moisture_zone_3}%` : "N/A"}</p>
-      </div>
-      <p className="mt-2 text-[10px] text-muted-foreground">
-        Last read: {updatedAt}
-      </p>
-    </div>
-  );
-}
-
-const badgeStyles: Record<string, string> = {
-  Control: "bg-accent/10 text-accent",
-  Stress: "bg-muted text-muted-foreground",
-  AI: "bg-primary/10 text-primary",
-};
-
-function ZoneCard({
-  name,
-  mode,
-  moisture,
-}: {
-  name: string;
-  mode: string;
-  moisture: number | null;
-}) {
-  const pct = moisture ?? 0;
-  const display = moisture != null ? `${pct}%` : "N/A";
-  const barWidth = moisture != null ? `${pct}%` : "0%";
-
-  return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{name}</p>
-        <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeStyles[mode] || "bg-muted text-muted-foreground"}`}
-        >
-          {mode}
-        </span>
-      </div>
-      <p className="mt-2 font-heading text-3xl font-bold tracking-tight text-card-foreground">
-        {display}
-      </p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-primary transition-all duration-500"
-          style={{ width: barWidth }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <div className="animate-pulse rounded-2xl border border-border bg-card p-5">
-      <div className="h-3 w-20 rounded bg-muted" />
-      <div className="mt-3 h-8 w-28 rounded bg-muted" />
-      <div className="mt-3 h-3 w-24 rounded bg-muted" />
     </div>
   );
 }
