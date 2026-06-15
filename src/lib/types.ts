@@ -127,3 +127,37 @@ export interface PlantHealthStatus {
   input_shape?: string;
   message?: string;
 }
+
+// ─── Integrated Decision ────────────────────────
+
+export interface IntegratedDecision {
+  zone: number;
+  current_moisture: number;
+  predicted_moisture: number;
+  threshold: number;
+  days_since_watered: number;
+  rf_decision: {
+    should_irrigate: boolean;
+    reason: string;
+  };
+  plant_health: {
+    classification: string | null;
+    confidence: number | null;
+    available: boolean;
+  };
+  override_applied: boolean;
+  final_action: "irrigate" | "dont_irrigate" | "manual_check";
+  final_reason: string;
+}
+
+export interface IntegratedDecisionResponse {
+  status: string;
+  timestamp: string;
+  environment: {
+    temperature_c: number;
+    humidity_pct: number;
+    vpd_kpa: number;
+    hour: number;
+  };
+  integrated_decisions: IntegratedDecision[];
+}

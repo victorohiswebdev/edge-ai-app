@@ -10,8 +10,9 @@ import type {
   SystemHealth,
   PumpStatus,
   IrrigationResponse,
+  IntegratedDecisionResponse,
 } from "@/lib/types";
-import { getLatestReading, getHistory, getSummary, fetchLiveReading, fetchSystemHealth, fetchPumpStatus, fetchIrrigationPrediction } from "@/lib/api";
+import { getLatestReading, getHistory, getSummary, fetchLiveReading, fetchSystemHealth, fetchPumpStatus, fetchIrrigationPrediction, fetchIntegratedDecision } from "@/lib/api";
 import { HeroHeader } from "@/components/dashboard/hero-header";
 import { SensorCard } from "@/components/dashboard/sensor-card";
 import { LiveLogPanel } from "@/components/dashboard/live-log-panel";
@@ -22,6 +23,7 @@ import SensorChart from "@/components/SensorChart";
 import SystemHealthCard from "@/components/SystemHealthCard";
 import PumpControl from "@/components/PumpControl";
 import IrrigationPredictionCard from "@/components/IrrigationPredictionCard";
+import IntegratedDecisionCard from "@/components/IntegratedDecisionCard";
 
 // ─── Accent profiles ──────────────────────────────────────────
 
@@ -79,9 +81,10 @@ export default function DashboardPage() {
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [pumpStatus, setPumpStatus] = useState<PumpStatus | null>(null);
   const [irrigation, setIrrigation] = useState<IrrigationResponse | null>(null);
+  const [integrated, setIntegrated] = useState<IntegratedDecisionResponse | null>(null);
 
   const refresh = useCallback(async () => {
-    const [l, liv, h, s, he, ps, irr] = await Promise.all([
+    const [l, liv, h, s, he, ps, irr, idec] = await Promise.all([
       getLatestReading(),
       fetchLiveReading(),
       getHistory(24, 200),
@@ -89,6 +92,7 @@ export default function DashboardPage() {
       fetchSystemHealth(),
       fetchPumpStatus(),
       fetchIrrigationPrediction(),
+      fetchIntegratedDecision(),
     ]);
     setLatest(l.data);
     if (liv) {
@@ -101,6 +105,7 @@ export default function DashboardPage() {
     if (he) setHealth(he);
     if (ps) setPumpStatus(ps);
     if (irr) setIrrigation(irr);
+    if (idec) setIntegrated(idec);
     setLoading(false);
   }, []);
 
@@ -221,14 +226,14 @@ export default function DashboardPage() {
         {/* AI Irrigation Prediction */}
         <section style={{ contentVisibility: "auto" }}>
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
-            AI Irrigation Prediction
+            AI Irrigation Decision
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Random Forest model predicts natural moisture trajectory 15 min ahead.
-            Irrigation is triggered when predicted moisture drops below 35% threshold.
+            Combined RF + CNN decision. Random Forest predicts natural moisture trajectory
+            15 min ahead. CNN overrides irrigation when plant stress or wilt is detected.
           </p>
           <div className="mt-5">
-            <IrrigationPredictionCard predictions={irrigation?.predictions ?? null} />
+            <IntegratedDecisionCard decisions={integrated?.integrated_decisions ?? null} />
           </div>
         </section>
 

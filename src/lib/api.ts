@@ -17,6 +17,7 @@ import type {
   WithSource,
   IrrigationResponse,
   PlantHealthResult,
+  IntegratedDecisionResponse,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -137,6 +138,12 @@ export async function fetchLatestPlantHealth(): Promise<PlantHealthResult | null
 
 export async function classifyCapture(capture: string): Promise<{ classification: string; confidence: number } | null> {
   return fetchJson(`${API_BASE}/api/v1/plant-health/classify?capture=${encodeURIComponent(capture)}`);
+}
+
+// ─── Integrated Decision API ─────────────────────
+
+export async function fetchIntegratedDecision(): Promise<IntegratedDecisionResponse | null> {
+  return fetchJson<IntegratedDecisionResponse>(`${API_BASE}/api/v1/irrigation/integrated-decision`);
 }
 
 // ─── Synthetic fallback data ───────────────────────────────────────
