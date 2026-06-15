@@ -16,6 +16,7 @@ import type {
   PumpStatus,
   WithSource,
   IrrigationResponse,
+  PlantHealthResult,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -126,6 +127,16 @@ export async function fetchCaptures(limit = 10): Promise<{ captures: { filename:
 
 export async function fetchIrrigationPrediction(): Promise<IrrigationResponse | null> {
   return fetchJson<IrrigationResponse>(`${API_BASE}/api/v1/irrigation/predict`);
+}
+
+// ─── Plant Health API ─────────────────────────────
+
+export async function fetchLatestPlantHealth(): Promise<PlantHealthResult | null> {
+  return fetchJson<PlantHealthResult>(`${API_BASE}/api/v1/plant-health/latest`);
+}
+
+export async function classifyCapture(capture: string): Promise<{ classification: string; confidence: number } | null> {
+  return fetchJson(`${API_BASE}/api/v1/plant-health/classify?capture=${encodeURIComponent(capture)}`);
 }
 
 // ─── Synthetic fallback data ───────────────────────────────────────

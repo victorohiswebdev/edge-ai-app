@@ -108,3 +108,22 @@ export interface IrrigationResponse {
   };
   predictions: IrrigationPrediction[];
 }
+
+// ─── Plant Health ────────────────────────────
+
+export interface PlantHealthResult {
+  id: number;
+  timestamp: string;
+  image_path: string;
+  classification: string;
+  confidence: number;
+  probabilities: Record<string, number>;
+}
+
+export interface PlantHealthStatus {
+  model_loaded: boolean;
+  model_name: string;
+  classes: string[];
+  input_shape?: string;
+  message?: string;
+}

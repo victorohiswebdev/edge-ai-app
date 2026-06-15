@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { captureSnapshot, fetchCaptures } from "@/lib/api";
+import { captureSnapshot, fetchCaptures, fetchLatestPlantHealth } from "@/lib/api";
 
 interface CaptureItem {
   filename: string;
@@ -10,11 +10,18 @@ interface CaptureItem {
   size_bytes: number;
 }
 
+interface ClassificationResult {
+  classification: string;
+  confidence: number;
+  probabilities: Record<string, number>;
+}
+
 export default function CameraLabPage() {
   const [capturing, setCapturing] = useState(false);
   const [latestImage, setLatestImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [captures, setCaptures] = useState<CaptureItem[]>([]);
+  const [classification, setClassification] = useState<ClassificationResult | null>(null);
 
   const loadCaptures = useCallback(async () => {
     const result = await fetchCaptures(5);
@@ -28,10 +35,20 @@ export default function CameraLabPage() {
   const handleCapture = useCallback(async () => {
     setCapturing(true);
     setError(null);
+    setClassification(null);
     try {
       const blobUrl = await captureSnapshot();
       if (blobUrl) {
         setLatestImage(blobUrl);
+        // Fetch the auto-classification result
+        const health = await fetchLatestPlantHealth();
+        if (health) {
+          setClassification({
+            classification: health.classification,
+            confidence: health.confidence,
+            probabilities: health.probabilities,
+          });
+        }
         await loadCaptures();
       } else {
         setError("Capture failed — check camera connection");
@@ -113,6 +130,72 @@ export default function CameraLabPage() {
                 className="w-full max-w-2xl object-contain"
               />
             </div>
+
+            {/* Classification result */}
+            {classification && (
+              <div className="mt-4 rounded-2xl border border-border bg-card p-5">
+                <h3 className="font-heading text-base font-bold text-foreground">
+                  Plant Health Classification
+                </h3>
+                <div className="mt-4 flex items-center gap-4">
+                  <div
+                    className={`flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-black ${
+                      classification.classification === "healthy"
+                        ? "bg-green-100 text-green-700"
+                        : classification.classification === "stressed"
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {classification.classification === "healthy"
+                      ? "✓"
+                      : classification.classification === "stressed"
+                      ? "!"
+                      : "✗"}
+                  </div>
+                  <div>
+                    <p
+                      className={`text-xl font-black capitalize ${
+                        classification.classification === "healthy"
+                          ? "text-green-600"
+                          : classification.classification === "stressed"
+                          ? "text-amber-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {classification.classification}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Confidence: {(classification.confidence * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Confidence bars */}
+                <div className="mt-4 space-y-2">
+                  {Object.entries(classification.probabilities).map(([cls, prob]) => (
+                    <div key={cls} className="flex items-center gap-3">
+                      <span className="w-20 text-xs font-medium capitalize text-muted-foreground">
+                        {cls}
+                      </span>
+                      <div className="flex-1 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={`h-2.5 rounded-full transition-all duration-500 ${
+                            cls === classification.classification
+                              ? "bg-gradient-to-r from-primary to-emerald-400"
+                              : "bg-muted-foreground/20"
+                          }`}
+                          style={{ width: `${prob * 100}%` }}
+                        />
+                      </div>
+                      <span className="w-12 text-right text-xs font-bold tabular-nums text-card-foreground">
+                        {(prob * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
 
