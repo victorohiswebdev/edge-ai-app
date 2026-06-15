@@ -84,3 +84,27 @@ export interface PumpStatus {
   pump_3: "ON" | "OFF";
   updated_at: string | null;
 }
+
+// ─── AI / Irrigation Prediction ───────────────────
+
+export interface IrrigationPrediction {
+  zone: number;
+  current_moisture: number;
+  predicted_moisture: number;
+  threshold: number;
+  should_irrigate: boolean;
+  reason: string;
+  days_since_watered: number;
+}
+
+export interface IrrigationResponse {
+  status: string;
+  timestamp: string;
+  environment: {
+    temperature_c: number;
+    humidity_pct: number;
+    vpd_kpa: number;
+    hour: number;
+  };
+  predictions: IrrigationPrediction[];
+}

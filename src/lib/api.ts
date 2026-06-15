@@ -15,6 +15,7 @@ import type {
   SystemHealth,
   PumpStatus,
   WithSource,
+  IrrigationResponse,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -119,6 +120,12 @@ export async function captureSnapshot(): Promise<string | null> {
 
 export async function fetchCaptures(limit = 10): Promise<{ captures: { filename: string; timestamp: string; size_bytes: number }[] } | null> {
   return fetchJson(`${API_BASE}/api/v1/camera/captures?limit=${limit}`);
+}
+
+// ─── AI / Irrigation Prediction API ─────────────────────────────
+
+export async function fetchIrrigationPrediction(): Promise<IrrigationResponse | null> {
+  return fetchJson<IrrigationResponse>(`${API_BASE}/api/v1/irrigation/predict`);
 }
 
 // ─── Synthetic fallback data ───────────────────────────────────────
