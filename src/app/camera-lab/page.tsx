@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { captureSnapshot, fetchCaptures, fetchLatestPlantHealth } from "@/lib/api";
+import { DashboardShell } from "@/components/DashboardShell";
 
 interface CaptureItem {
   filename: string;
@@ -66,28 +67,20 @@ export default function CameraLabPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+    <DashboardShell>
+      <div className="space-y-8 p-6 md:p-10">
+        {/* Page Header */}
+        <header className="flex items-center justify-between">
           <div>
-            <h1 className="font-heading text-xl font-bold text-foreground">
+            <h1 className="font-heading text-2xl font-bold text-foreground md:text-3xl">
               Camera Lab
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Pi Camera Module — test snapshots and inspection
+            <p className="mt-1 text-sm text-muted-foreground">
+              Pi Camera Module — capture snapshots and plant health classification
             </p>
           </div>
-          <Link
-            href="/"
-            className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary/90"
-          >
-            ← Dashboard
-          </Link>
-        </div>
-      </header>
+        </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 space-y-8 px-6 py-8">
         {/* Capture button */}
         <section>
           <div className="flex items-center gap-4">
@@ -238,7 +231,7 @@ export default function CameraLabPage() {
             <p>Capture method: picamera2 → JPEG</p>
           </div>
         </section>
-      </main>
-    </div>
+      </div>
+    </DashboardShell>
   );
 }

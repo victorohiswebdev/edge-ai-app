@@ -1,35 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type {
-  LatestReading,
-  SensorReading,
-  DataSource,
-  LiveReading,
-  SensorSummary,
-  SystemHealth,
-  PumpStatus,
-  IrrigationResponse,
-  IntegratedDecisionResponse,
-} from "@/lib/types";
-import { getLatestReading, getHistory, getSummary, fetchLiveReading, fetchSystemHealth, fetchPumpStatus, fetchIrrigationPrediction, fetchIntegratedDecision } from "@/lib/api";
-import { HeroHeader } from "@/components/dashboard/hero-header";
+import type { LatestReading, LiveReading, DataSource, SystemHealth } from "@/lib/types";
+import { getLatestReading, fetchLiveReading, fetchSystemHealth } from "@/lib/api";
+import { DashboardShell } from "@/components/DashboardShell";
 import { SensorCard } from "@/components/dashboard/sensor-card";
-import { LiveLogPanel } from "@/components/dashboard/live-log-panel";
 import { ZoneCard } from "@/components/dashboard/zone-card";
-import { PlantHealthCard } from "@/components/dashboard/plant-health-card";
 import { SkeletonCard } from "@/components/dashboard/skeleton-card";
-import SensorChart from "@/components/SensorChart";
-import SystemHealthCard from "@/components/SystemHealthCard";
-import PumpControl from "@/components/PumpControl";
-import IrrigationPredictionCard from "@/components/IrrigationPredictionCard";
-import IntegratedDecisionCard from "@/components/IntegratedDecisionCard";
 
 // ─── Accent profiles ──────────────────────────────────────────
 
 const TEMP_ACCENT = { from: "from-green-500", to: "to-teal-400", tint: "from-green-500/5 to-teal-500/5" };
 const HUMIDITY_ACCENT = { from: "from-sky-500", to: "to-cyan-400", tint: "from-sky-500/5 to-cyan-500/5" };
-const PUMP_ACCENT = { from: "from-amber-500", to: "to-orange-400", tint: "from-amber-500/5 to-orange-500/5" };
 
 const ZONE_ACCENTS: Record<string, { from: string; to: string; dot: string; progress: string; tint: string; badge: string }> = {
   Control: {
@@ -49,18 +31,14 @@ const ZONE_ACCENTS: Record<string, { from: string; to: string; dot: string; prog
   },
 };
 
-// ─── Hover info content ───────────────────────────────────────
-
 const INFO = {
-  temp: "Ambient air temperature measured by the BME280 sensor at canopy height. Used to calculate evapotranspiration rates and VPD for precision irrigation scheduling.",
-  humidity: "Relative humidity reading from the BME280 sensor. Combined with temperature to compute vapour pressure deficit — a key input to the predictive irrigation model.",
-  vpd: "Vapour Pressure Deficit calculated from temperature & humidity. High VPD (>2.0 kPa) indicates plants are transpiring rapidly and may need irrigation.",
-  z1: "Control zone — baseline irrigation without AI intervention. Watered on a fixed schedule to serve as experimental control for comparing water usage and plant health.",
-  z2: "Stress zone — deliberately reduced irrigation to observe plant physiological response under water-limited conditions. Tests the system's drought detection capability.",
-  z3: "AI-Managed zone — the Random Forest model predicts optimal irrigation timing and duration based on real-time sensor data, ambient conditions, and historical patterns.",
+  temp: "Ambient air temperature measured by the BME280 sensor at canopy height.",
+  humidity: "Relative humidity from BME280. Combined with temperature for VPD calculation.",
+  vpd: "Vapour Pressure Deficit — high VPD (>2 kPa) indicates rapid transpiration.",
+  z1: "Control zone — fixed threshold irrigation. Serves as experimental baseline.",
+  z2: "Stress zone — deliberately reduced irrigation for drought response testing.",
+  z3: "AI-Managed zone — Random Forest model predicts optimal irrigation timing.",
 };
-
-// ─── Helpers ──────────────────────────────────────────────────
 
 function calcVPD(temp: number | null | undefined, hum: number | null | undefined): string {
   if (temp == null || hum == null) return "N/A";
@@ -68,88 +46,82 @@ function calcVPD(temp: number | null | undefined, hum: number | null | undefined
   return `${((1 - hum / 100) * es).toFixed(1)} kPa`;
 }
 
-// ─── Page ─────────────────────────────────────────────────────
-
-export default function DashboardPage() {
+export default function OverviewPage() {
   const [latest, setLatest] = useState<LatestReading | null>(null);
   const [live, setLive] = useState<LiveReading | null>(null);
-  const [history, setHistory] = useState<SensorReading[]>([]);
-  const [summary, setSummary] = useState<SensorSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState<DataSource>("synthetic");
-  const [liveUpdated, setLiveUpdated] = useState<string>("—");
   const [health, setHealth] = useState<SystemHealth | null>(null);
-  const [pumpStatus, setPumpStatus] = useState<PumpStatus | null>(null);
-  const [irrigation, setIrrigation] = useState<IrrigationResponse | null>(null);
-  const [integrated, setIntegrated] = useState<IntegratedDecisionResponse | null>(null);
 
   const refresh = useCallback(async () => {
-    const [l, liv, h, s, he, ps, irr, idec] = await Promise.all([
+    const [l, liv, he] = await Promise.all([
       getLatestReading(),
       fetchLiveReading(),
-      getHistory(24, 200),
-      getSummary(24),
       fetchSystemHealth(),
-      fetchPumpStatus(),
-      fetchIrrigationPrediction(),
-      fetchIntegratedDecision(),
     ]);
-    setLatest(l.data);
-    if (liv) {
-      setLive(liv);
-      setLiveUpdated(new Date().toLocaleTimeString());
-    }
-    setHistory(h.data);
-    setSummary(s.data);
-    setDataSource(l.source);
+    if (l) { setLatest(l.data); setDataSource(l.source); }
+    if (liv) setLive(liv);
     if (he) setHealth(he);
-    if (ps) setPumpStatus(ps);
-    if (irr) setIrrigation(irr);
-    if (idec) setIntegrated(idec);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     refresh();
-    const quick = setInterval(refresh, 10000);
-    const slow = setInterval(() => {
-      getHistory(24, 200).then(h => setHistory(h.data));
-      getSummary(24).then(s => setSummary(s.data));
-      fetchSystemHealth().then(h => setHealth(h));
-    }, 120000);
-    return () => { clearInterval(quick); clearInterval(slow); };
+    const interval = setInterval(refresh, 10000);
+    return () => clearInterval(interval);
   }, [refresh]);
+
+  // Status badge
+  const statusColor = dataSource === "live"
+    ? "bg-green-100 text-green-800 ring-green-300 dark:bg-green-900 dark:text-green-200"
+    : dataSource === "database"
+    ? "bg-amber-100 text-amber-800 ring-amber-300 dark:bg-amber-900 dark:text-amber-200"
+    : "bg-slate-100 text-slate-600 ring-slate-300 dark:bg-slate-900 dark:text-slate-400";
+
+  const statusLabel = dataSource === "live" ? "● Live" : dataSource === "database" ? "◉ Stored" : "○ Simulated";
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <div className="h-56 animate-pulse bg-green-700" />
-        <main className="flex-1 space-y-8 p-8">
-          <div>
-            <div className="h-5 w-32 rounded bg-muted" />
-            <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
-            </div>
+      <DashboardShell>
+        <div className="space-y-8 p-6 md:p-10">
+          <div className="h-16 animate-pulse rounded-xl bg-muted" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
-        </main>
-      </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        </div>
+      </DashboardShell>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <HeroHeader dataSource={dataSource} />
+    <DashboardShell>
+      <div className="space-y-8 p-6 md:p-10">
+        {/* Page Header */}
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+              Smart Farming Dashboard
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Edge AI Framework — Real-time sensor monitoring
+            </p>
+          </div>
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${statusColor}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${dataSource === "live" ? "animate-pulse bg-green-500" : "bg-current"}`} />
+            {statusLabel}
+          </span>
+        </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-10 px-4 py-10 md:px-8 md:py-12 lg:space-y-14 lg:py-16">
         {/* Environmental Sensors */}
-        <section style={{ contentVisibility: "auto" }}>
-          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
-            Environmental Sensors
+        <section>
+          <h2 className="font-heading text-lg font-bold tracking-tight text-foreground">
+            Environment
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Real-time readings from the BME280 environmental sensor
-          </p>
-          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <p className="mt-0.5 text-xs text-muted-foreground">BME280 sensor readings</p>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <SensorCard
               label="Temperature"
               value={latest?.temperature_c != null ? `${latest.temperature_c.toFixed(1)}°C` : "N/A"}
@@ -177,28 +149,15 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Pump Control — moved to own section */}
-        <section style={{ contentVisibility: "auto" }}>
-          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
-            Pump Control
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manual control for the three irrigation zones. Commands are queued and executed by the Arduino.
-          </p>
-          <div className="mt-5">
-            <PumpControl pumpStatus={pumpStatus} />
-          </div>
-        </section>
-
         {/* Irrigation Zones */}
-        <section style={{ contentVisibility: "auto" }}>
-          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
+        <section>
+          <h2 className="font-heading text-lg font-bold tracking-tight text-foreground">
             Irrigation Zones
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Soil moisture levels across the three experimental zones — Control, Stress, and AI-Managed
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Soil moisture across the three experimental zones
           </p>
-          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <ZoneCard
               name="Zone 1 — Control"
               mode="Control"
@@ -223,79 +182,40 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* AI Irrigation Prediction */}
-        <section style={{ contentVisibility: "auto" }}>
-          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
-            AI Irrigation Decision
+        {/* System Status */}
+        <section>
+          <h2 className="font-heading text-lg font-bold tracking-tight text-foreground">
+            System Status
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Combined RF + CNN decision. Random Forest predicts natural moisture trajectory
-            15 min ahead. CNN overrides irrigation when plant stress or wilt is detected.
-          </p>
-          <div className="mt-5">
-            <IntegratedDecisionCard decisions={integrated?.integrated_decisions ?? null} />
+          <p className="mt-0.5 text-xs text-muted-foreground">Quick health overview</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { label: "Arduino", ok: health?.arduino?.connected },
+              { label: "Logger", ok: health?.heartbeat?.logger_active },
+              { label: "API", ok: health?.services?.api?.running },
+              { label: "Dashboard", ok: health?.services?.dashboard?.running },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="rounded-xl border border-border bg-card p-4 text-center"
+              >
+                <div className={`mx-auto mb-2 h-2.5 w-2.5 rounded-full ${s.ok ? "bg-green-500" : "bg-red-400"}`} />
+                <p className="text-xs font-medium text-foreground">{s.label}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {s.ok ? "Online" : "Offline"}
+                </p>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* Serial Monitor */}
-        <section style={{ contentVisibility: "auto" }}>
-          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
-            Serial Monitor
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Live data stream from the Arduino Uno via USB serial (9600 baud)
+        {/* Footer */}
+        <footer className="border-t border-border pt-6">
+          <p className="text-center text-[11px] text-muted-foreground">
+            Edge AI Framework — FYP 2026 · Afe Babalola University, Ado-Ekiti
           </p>
-          <div className="mt-5">
-            <LiveLogPanel live={live} updatedAt={liveUpdated} />
-          </div>
-        </section>
-
-        {/* 24-Hour History */}
-        <section style={{ contentVisibility: "auto" }}>
-          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
-            24-Hour History
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Historical sensor readings with downsampled display for trend analysis
-          </p>
-          <div className="mt-5">
-            <SensorChart data={history} />
-          </div>
-        </section>
-
-        {/* System Health — expanded to full width */}
-        <section style={{ contentVisibility: "auto" }}>
-          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
-            System Health
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Real-time status of all hardware and software subsystems
-          </p>
-          <div className="mt-5">
-            <SystemHealthCard health={health} />
-          </div>
-        </section>
-
-        {/* Plant Health */}
-        <section style={{ contentVisibility: "auto" }}>
-          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
-            Plant Health
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            CNN-based crop disease detection and growth stage classification
-          </p>
-          <div className="mt-5">
-            <PlantHealthCard />
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border bg-card py-6">
-        <p className="text-center text-xs text-muted-foreground">
-          Edge AI Framework — FYP 2026 · Afe Babalola University, Ado-Ekiti
-        </p>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </DashboardShell>
   );
 }
