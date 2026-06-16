@@ -106,15 +106,37 @@ export async function emergencyStop(): Promise<{ success: boolean; message: stri
 
 // ─── Camera API ──────────────────────────────────────────────────
 
-export async function captureSnapshot(): Promise<string | null> {
+export interface SnapshotResult {
+  blobUrl: string;
+  classification?: string;
+  confidence?: number;
+  classificationError?: string;
+}
+
+export async function captureSnapshot(): Promise<SnapshotResult | null> {
   try {
     const res = await fetch(`${API_BASE}/api/v1/camera/snapshot`, {
       cache: "no-store",
     });
     if (!res.ok) return null;
-    // Return the blob URL
     const blob = await res.blob();
-    return URL.createObjectURL(blob);
+    const blobUrl = URL.createObjectURL(blob);
+
+    const result: SnapshotResult = { blobUrl };
+
+    const classification = res.headers.get("X-Classification");
+    const confidence = res.headers.get("X-Confidence");
+    const classificationError = res.headers.get("X-Classification-Error");
+
+    if (classification) {
+      result.classification = classification;
+      result.confidence = confidence ? parseFloat(confidence) : undefined;
+    }
+    if (classificationError) {
+      result.classificationError = classificationError;
+    }
+
+    return result;
   } catch {
     return null;
   }
